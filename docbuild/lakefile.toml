@@ -4,14 +4,11 @@ version = "0.1.0"
 reservoir = false
 packagesDir = "../.lake/packages"
 
-# Point to your main library (adjust name & path as needed)
 [[require]]
 name = "MathUniverse"
 path = "../"
 
-# Pull in doc-gen4 itself (pin to a release or branch)
 [[require]]
 scope = "leanprover"
 name  = "doc-gen4"
-# e.g. use "v4.20.0-rc5" or "main"
 rev   = "main"
