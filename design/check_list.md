@@ -1,0 +1,121 @@
+# Check List
+
+Below is an *exhaustive* implementation roadmap rendered as a **Markdown-checklist**. Tick each item off as you complete it to progress from a blank repository to a fully-automated, searchable, interactive formal-math knowledge site.
+
+## Summary
+
+You will set up Lean 4 with VS Code, generate semantic JSON docs via **doc-gen4**, post-process them into MDX for Docusaurus, enrich pages with JSON-LD, wire up interactive *lean4web* editors, draw a dependency graph, add typo-tolerant Algolia search, and ship the static site to GitHub Pages through a cached CI pipeline. Citations accompany every step so you can consult the authoritative source if something breaks.
+
+---
+
+## 1 · Local prerequisites (once per workstation)
+
+- [x]  **Install Lean 4 + `elan`** using the official instructions.([Lean](https://lean-lang.org/documentation/setup/?utm_source=chatgpt.com))
+- [x]  **Install VS Code** and add the *Lean 4* extension, which provides on-save “watch” tasks.([GitHub](https://github.com/leanprover/vscode-lean4?utm_source=chatgpt.com), [Visual Studio Code](https://code.visualstudio.com/docs/editor/tasks?utm_source=chatgpt.com))
+- [x]  **Install Node 20 LTS** (needed for Docusaurus & build scripts).([docusaurus.io](https://docusaurus.io/docs/next?utm_source=chatgpt.com))
+- [x]  **Generate an SSH/GPG key** and add it to GitHub for push access (GitHub docs, not quoted for brevity).
+
+## 2 · Repository scaffolding
+
+- [x]  `git init my-math-site && cd my-math-site`
+- [x]  `lake init MyMathLib` – creates Lean project with `lakefile.lean` and `lean-toolchain`.([GitHub](https://github.com/leanprover/lean4/blob/master/src/lake/README.md?utm_source=chatgpt.com))
+- [x]  Commit the fresh repo and push to `origin/main`.
+
+## 3 · Authoring workflow
+
+- [ ]  **Enable zero-friction capture**: any `.lean` file saved in VS Code triggers `lake build :docs` via the extension’s built-in watcher. Add this to `.vscode/tasks.json` if you want manual control.([Visual Studio Code](https://code.visualstudio.com/docs/editor/tasks?utm_source=chatgpt.com), [GitHub](https://github.com/leanprover/vscode-lean4?utm_source=chatgpt.com))
+- [ ]  Write your first theorem or definition inside `MyMathLib/`. Verify `lake build` passes.
+
+## 4 · Documentation generation
+
+- [ ]  Add **doc-gen4** to `lakefile.lean` (`require doc-gen4 from git`).([GitHub](https://github.com/leanprover/doc-gen4?utm_source=chatgpt.com))
+- [ ]  Run `lake build :docs` once; inspect the `build/doc-gen4/json/` folder for semantic JSON.([GitHub](https://github.com/leanprover/doc-gen4?utm_source=chatgpt.com))
+
+## 5 · Post-processing JSON → MDX
+
+- [ ]  Create `scripts/json2mdx.ts` to transform each JSON blob into an `.mdx` file with:
+  - YAML front-matter (id, name, type, uses, serves, git_sha, lean_version, mathlib_rev, doi).
+  - A trailing **JSON-LD** `<script type="application/ld+json">` block using the *ScholarlyArticle* vocabulary.([Schema.org](https://schema.org/ScholarlyArticle?utm_source=chatgpt.com))
+- [ ]  Update package.json: `"build:docs": "lake build :docs && ts-node scripts/json2mdx.ts"`.
+
+## 6 · Docusaurus site
+
+- [ ]  `npx create-docusaurus@latest docs-site classic --typescript`.([docusaurus.io](https://docusaurus.io/docs/next?utm_source=chatgpt.com))
+- [ ]  `npm i @docusaurus/theme-mermaid @arsero/docusaurus-graph` for diagrams + graph view.([docusaurus.io](https://docusaurus.io/docs/next/api/themes/%40docusaurus/theme-mermaid?utm_source=chatgpt.com), [GitHub](https://github.com/Arsero/docusaurus-graph?utm_source=chatgpt.com))
+- [ ]  Add **Algolia DocSearch** & **theme-search-algolia** dependencies.([docsearch.algolia.com](https://docsearch.algolia.com/docs/integrations?utm_source=chatgpt.com), [GitHub](https://github.com/algolia/docsearch?utm_source=chatgpt.com))
+- [ ]  Add a local React wrapper for *lean4web* to `/src/components/LeanPlayground.tsx`.([GitHub](https://github.com/leanprover-community/lean4web?utm_source=chatgpt.com))
+- [ ]  Configure `docusaurus.config.ts`:
+  - theme-mermaid, prism-lean language.
+  - preset-classic docs path → `../build/mdx`.
+  - `plugins: ['@arsero/docusaurus-graph']`.
+  - `themeConfig.algolia = { appId, apiKey, indexName }`.
+
+## 7 · Interactive Lean playground
+
+- [ ]  Import the component where needed:
+
+    ```tsx
+    <LeanPlayground code={`import Mathlib\n theorem …`} />
+    ```
+
+    validates in-browser edits against the Lean server.([GitHub](https://github.com/leanprover-community/lean4web?utm_source=chatgpt.com))
+
+## 8 · Math & diagrams
+
+- [ ]  Enable KaTeX: `npm i remark-math rehype-katex` and add to `markdown:` pipeline.([docusaurus.io](https://docusaurus.io/docs/markdown-features/math-equations?utm_source=chatgpt.com))
+- [ ]  Test a `$$\int_0^1 x^2 dx$$` snippet renders correctly.
+
+## 9 · Full-text search
+
+- [ ]  **Apply to Algolia’s free OSS DocSearch** and receive `appId`, `apiKey`, `indexName`.([docsearch.algolia.com](https://docsearch.algolia.com/docs/integrations?utm_source=chatgpt.com), [GitHub](https://github.com/algolia/docsearch?utm_source=chatgpt.com))
+- [ ]  Paste the DocSearch script tag in `docusaurus.config.ts` (or use the theme). Build once; the crawler auto-indexes on deploy.([docsearch.algolia.com](https://docsearch.algolia.com/docs/integrations?utm_source=chatgpt.com))
+
+## 10 · CI/CD pipeline
+
+- [ ]  Create `.github/workflows/docs.yml` with the following skeleton:
+
+    ```yaml
+    on: [push]
+    jobs:
+      build:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
+          - uses: actions/setup-node@v4
+            with: {node-version: 20}
+          - uses: actions/cache@v4
+            with:
+              path: ~/.elan
+              key: ${{ runner.os }}-elan-${{ hashFiles('lean-toolchain') }}
+          - run: lake build :docs       # Lean + doc-gen4
+          - run: npm ci && npm run build
+          - name: Deploy
+            uses: peaceiris/actions-gh-pages@v4
+            with:
+              github_token: ${{ secrets.GITHUB_TOKEN }}
+              publish_dir: ./docs-site/build
+    
+    ```
+
+    *Lean cache* avoids recompiling mathlib on every push.([GitHub](https://github.com/leanprover/lean4/issues/3950?utm_source=chatgpt.com), [GitHub](https://github.com/peaceiris/actions-gh-pages?utm_source=chatgpt.com))
+
+## 11 · GitHub Pages
+
+- [ ]  Enable Pages → “Deploy from `gh-pages` branch” in repo settings.
+- [ ]  Commit & push; workflow should publish `https://<user>.github.io/<repo>/`.
+
+## 12 · Graph & backlinks
+
+- [ ]  Visit `/graph` in the site; verify nodes & edges correspond to `uses/serves` metadata.([GitHub](https://github.com/Arsero/docusaurus-graph?utm_source=chatgpt.com))
+
+## 13 · Future enhancements (road-mapped)
+
+- [ ]  Expose `/api/theorems/{id}` via a Next.js route or GraphQL-Markdown plugin.([GitHub](https://github.com/graphql-markdown/graphql-markdown?utm_source=chatgpt.com))
+- [ ]  Add `obsidian-export` job to nightly CI for vault sync.([GitHub](https://github.com/zoni/obsidian-export/blob/main/README.md?utm_source=chatgpt.com))
+- [ ]  Integrate citation graph overlay using Crossref API (docs not cited here).
+
+---
+
+### Done
+
+Follow the checklist in order; by the final tick you will have a **dark-mode, mobile-first, zero-friction formal mathematics knowledge base** with live proofs, backlink graph, and lightning-fast search—all continuously deployed.
