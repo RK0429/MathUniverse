@@ -1,0 +1,10 @@
+name = "MathUniverse"
+version = "0.1.0"
+defaultTargets = ["mathuniverse"]
+
+[[lean_lib]]
+name = "MathUniverse"
+
+[[lean_exe]]
+name = "mathuniverse"
+root = "Main"
