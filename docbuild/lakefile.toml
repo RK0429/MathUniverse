@@ -1,6 +1,8 @@
 name = "docbuild"
 version = "0.1.0"
 reservoir = false
+buildDir    = "../.lake/build"
+packagesDir = "../.lake/packages"
 
 [[require]]
 name = "MathUniverse"
