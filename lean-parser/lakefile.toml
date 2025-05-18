@@ -11,3 +11,6 @@ root = "Main"
 
 [package.executables.genDecls]
 root = "GenDecls/Main"
+
+[package]
+srcDirs = ["src", "lean-parser/src"]
