@@ -11,13 +11,10 @@
                 // run in your workspace root
                 "cwd": "${workspaceFolder}"
             },
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "presentation": {
-                "reveal": "silent"
-            },
+            "group": "build",
+            // "presentation": {
+            //     "reveal": "silent"
+            // },
             "problemMatcher": []
         },
         {
@@ -30,9 +27,9 @@
             "cwd": "${workspaceFolder}/docbuild"
             },
             "group": "build",
-            "presentation": {
-                "reveal": "silent"
-            },
+            // "presentation": {
+            //     "reveal": "silent"
+            // },
             "problemMatcher": []
         }
     ]
