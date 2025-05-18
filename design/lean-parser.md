@@ -2,7 +2,7 @@
 
 Here’s a concrete design for a Lean 4 package—let’s call it **lean_stmt_export**—that walks a directory of `.lean` files, builds a unified environment, and emits JSON describing each statement’s ID, kind, and dependencies.
 
-In summary, the package uses `System.FilePath.walkDir` and `IO.FS` to find all source files recursively ([loogle.lean-lang.org](https://loogle.lean-lang.org/?q=IO)), loads them into a single `Environment` via `Lean.Core.withImportModules` in the `MetaM` monad , iterates over `env.constants.values` to collect every `ConstantInfo` , classifies each via `ConstantKind.ofConstantInfo` , extracts referenced names with `ConstantInfo.getUsedConstantsAsSet` , and finally serializes an array of `{ id, kind, deps }` objects using `Lean.Data.Json`’s `ToJson` machinery .
+In summary, the package uses `System.FilePath.walkDir` and `IO.FS` to find all source files recursively ([loogle.lean-lang.org](https://loogle.lean-lang.org/?q=IO)), loads them into a single `Environment` via `Lean.Core.withImportModules` in the `MetaM` monad , iterates over `env.constants.values` to collect every `ConstantInfo` , classifies each via `ConstantKind.ofConstantInfo` , extracts referenced names with `ConstantInfo.getUsedConstantsAsSet` , and finally serializes an array of `{ id, kind, deps }` objects using `Lean.Data.Json`’s `ToJson` machinery.
 
 ## Overview
 
