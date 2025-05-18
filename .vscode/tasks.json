@@ -31,6 +31,16 @@
             //     "reveal": "silent"
             // },
             "problemMatcher": []
+        },
+        {
+            "label": "Lean: full docs build",
+            "type": "shell",
+            "dependsOrder": "sequence",      // force sequential order :contentReference[oaicite:5]{index=5}
+            "dependsOn": [
+                "Lean: build (root)",
+                "Lean: build MathUniverse docs"
+            ],
+            "presentation": { "reveal": "silent" }
         }
     ]
 }
