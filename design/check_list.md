@@ -1,6 +1,6 @@
 # Implementation Checklist
 
-Before diving into the lists, here’s the big picture: you’ll stand up **two tightly-coupled workspaces**—Lean 4 (with `lake`) and Rust—wire them to a Docusaurus site, and then automate everything so that *saving* a `.lean` file locally or *pushing* to `main` in GitHub instantly regenerates MDX, rebuilds the site, and redeploys it. Below, each section expands the original checklist with extra context, commands, and file snippets.
+Before diving into the lists, here's the big picture: you'll stand up **two tightly-coupled workspaces**—Lean 4 (with `lake`) and Rust—wire them to a Docusaurus site, and then automate everything so that *saving* a `.lean` file locally or *pushing* to `main` in GitHub instantly regenerates MDX, rebuilds the site, and redeploys it. Below, each section expands the original checklist with extra context, commands, and file snippets.
 
 ---
 
@@ -8,7 +8,7 @@ Before diving into the lists, here’s the big picture: you’ll stand up **two 
 
 * [ ] **Create the monorepo** (e.g. `mathuniverse/`) with two top-level dirs: `lean/` and `mdx-gen/` (Rust).
 * [ ] **Install Lean 4 + `lake`** via `elan`, verify with `lake -h`. ([GitHub][1])
-* [ ] **Add `genDecls` executable** in `lean/lakefile.toml`; expose `main` that calls `Lean.Meta.getDecls` and writes `declarations.json`. Use the sample in Lake’s README as a template. ([Leanコミュニティ][2])
+* [ ] **Add `lean_stmt_export` executable** in `lean/lakefile.toml`; expose `main` that calls the necessary Lean functions to generate `stmt_deps.json` as described in `design/lean-parser.md`. ([Leanコミュニティ][2], `design/lean-parser.md`)
 * [ ] **Install the Rust tool-chain** (`rustup toolchain install stable`), then `cargo new mdx-gen --bin`.
 * [ ] **Add Rust dependencies** in `mdx-gen/Cargo.toml`:
 
@@ -16,8 +16,8 @@ Before diving into the lists, here’s the big picture: you’ll stand up **two 
   [dependencies]
   serde = { version = "1", features = ["derive"] }
   serde_json = "1"
-  tree-sitter = "0.22"
-  tree-sitter-lean = "0.1"     # grammar crate
+  # tree-sitter = "0.22"           # Removed: No longer needed for example parsing
+  # tree-sitter-lean = "0.1"      # Removed: Grammar crate not needed by mdx-gen
   tera = "1"                   # or handlebars = "5"
   clap = { version = "4", features = ["derive"] }
   ```
@@ -27,7 +27,7 @@ Before diving into the lists, here’s the big picture: you’ll stand up **two 
 
 ---
 
-## 2 · Local “Save → Rebuild” Automation
+## 2 · Local "Save → Rebuild" Automation
 
 ### 2.1 VS Code tasks
 
@@ -38,33 +38,38 @@ Before diving into the lists, here’s the big picture: you’ll stand up **two 
      "version": "2.0.0",
      "tasks": [
        {
-         "label": "Lean → JSON",
+         "label": "Lean → stmt_deps.json",
          "type": "shell",
-         "command": "lake exe genDecls",
+         "command": "lake exe lean_stmt_export",
+         "options": {
+           "cwd": "${workspaceFolder}/lean" // Assuming lean_stmt_export runs from the lean directory
+         },
          "problemMatcher": [],
          "runOptions": { "runOn": "fileSave" }   // triggers on save
        },
        {
-         "label": "JSON → MDX",
+         "label": "stmt_deps.json → MDX",
          "type": "shell",
-         "command": "cargo run -p mdx-gen",
-         "dependsOn": ["Lean → JSON"],
+         "command": "cargo run -p mdx-gen -- --input lean/stmt_deps.json --out-dir docs/formal", // Adjust paths as needed
+         "options": {
+           "cwd": "${workspaceFolder}/mdx-gen" // Assuming mdx-gen runs from its directory
+         },
+         "dependsOn": ["Lean → stmt_deps.json"],
          "runOptions": { "runOn": "fileSave" }
        }
      ]
    }
    ```
 
-   `runOn:"fileSave"` is documented in VS Code’s tasks API. ([Visual Studio Code][5])
+   `runOn:"fileSave"` is documented in VS Code's tasks API. ([Visual Studio Code][5])
 
 2. **Enable format-on-save** for JSON/MDX if desired (`editor.formatOnSave`).
 
 ### 2.2 Rust binary (`mdx-gen`)
 
-* **Parse arguments** with *clap* (`--input`, `--out-dir`).
-* **Deserialize `declarations.json`** with Serde.
-* **Walk the Lean workspace**; Tree-sitter gives you every `example` node quickly. ([Crates][6])
-* **Render MDX**: load templates (`templates/theorem.mdx`, etc.) via Tera/Handlebars and write to `docs/formal/`.
+* **Parse arguments** with *clap* (`--input <path_to_stmt_deps.json>`, `--out-dir <output_directory_for_mdx>`).
+* **Deserialize `stmt_deps.json`** with Serde (this file now contains all declarations, including examples, as per `design/lean-parser.md`).
+* **Render MDX**: load templates (`templates/theorem.mdx`, `templates/definition.mdx`, etc.) via Tera/Handlebars using the data from `stmt_deps.json` and write to the specified output directory (e.g., `docs/formal/`).
 * **Return non-zero exit code** on any serialization/IO error so CI fails early.
 
 ---
@@ -112,7 +117,7 @@ The component opens an iframe to a Lean server (self-host or use live.lean-lang.
 
 ### 4.2 Graph view
 
-`npx docusaurus build` now includes a “Graph” tab that visualises backlinks and prerequisites. ([GitHub][9])
+`npx docusaurus build` now includes a "Graph" tab that visualises backlinks and prerequisites. ([GitHub][9])
 
 ### 4.3 Algolia DocSearch
 
@@ -156,8 +161,10 @@ jobs:
         with:
           path: ~/.elan
           key: ${{ runner.os }}-elan-${{ hashFiles('lean/lean-toolchain') }}
-      - run: lake exe genDecls      # Lean
-      - run: cargo run -p mdx-gen   # Rust
+      - run: lake exe lean_stmt_export      # Lean: generates stmt_deps.json in lean/stmt_deps.json
+        working-directory: ./lean # Assuming lean_stmt_export is run from the lean directory
+      - run: cargo run -p mdx-gen -- --input lean/stmt_deps.json --out-dir docs/formal # Rust: processes stmt_deps.json
+        working-directory: ./mdx-gen # Assuming mdx-gen is run from its directory and paths are relative or absolute
       - run: npm ci && npm run build
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
@@ -172,26 +179,33 @@ The Lean community suggests caching `elan` to cut mathlib rebuild time. ([GitHub
 ## 6 · Security Hardening
 
 * **Wrap any server-side Lean instances** (required for heavy proofs) in `bubblewrap` to drop privileges and mount a minimal filesystem. ([GitHub][13])
-* **Limit outbound network** with `--unshare-net` if proofs don’t need it.
+* **Limit outbound network** with `--unshare-net` if proofs don't need it.
 * **Set CORS** and isolate the `/playground` route behind rate-limit middleware.
 
 ---
 
 ## 7 · Metadata & SEO
 
-* **Inject JSON-LD** for each page:
+* **Inject JSON-LD** for each page, aligned with `schema.org/ScholarlyArticle` as shown in `design/idea.md`:
 
   ````json
   {
     "@context": "https://schema.org",
     "@type": "ScholarlyArticle",
-    "identifier": "{{id}}",
-    "name": "{{name}}",
-    "keywords": ["{{field}}","{{subfield}}"],
-    "isBasedOn": "{{repo_url}}/tree/{{git_sha}}",
-    "url": "{{site_url}}/{{type}}/{{id}}"
+    "identifier": "{{id}}",                           // e.g., van_der_waerden
+    "name": "{{name}}",                             // e.g., Van der Waerden's theorem
+    "genre": "{{category}}",                        // e.g., Pure mathematics (from YAML front-matter)
+    "keywords": ["{{field}}", "{{subfield}}"],       // e.g., ["Discrete Mathematics & Combinatorics", "Ramsey theory"]
+    "version": "{{git_sha}}",                       // e.g., ab12c34
+    "isBasedOn": "{{repo_url}}/tree/{{git_sha}}",   // URL to the specific commit in the repo
+    "url": "{{site_url}}/{{type}}/{{id}}",          // Permanent link to the page
+    "description": "{{page_description_or_abstract}}", // A brief description of the content
+    "provider": {
+      "@type": "Organization",
+      "name": "MathUniverse" // Or your project's name
+    }
+    // Add other relevant fields like `author`, `datePublished`, `license` as available
   }
-  ``` :contentReference[oaicite:14]{index=14}  
   ````
 
 * **Add `SitemapPlugin`** in Docusaurus for crawler friendliness (`npm i @docusaurus/plugin-sitemap`).
@@ -201,7 +215,7 @@ The Lean community suggests caching `elan` to cut mathlib rebuild time. ([GitHub
 ## 8 · Contributor Experience
 
 * [ ] **Write `CONTRIBUTING.md`** covering: branching (`feature/*`, `main`), pre-commit (`lake build`, `cargo check`, `npm run build:mdx`), and how preview URLs are posted by CI.
-* [ ] **Add GitHub issue templates** for “new theorem” & “bug report”.
+* [ ] **Add GitHub issue templates** for "new theorem" & "bug report".
 * [ ] **Enable Dependabot** for `Cargo.toml`, `package.json`, and GitHub Actions.
 
 ---
