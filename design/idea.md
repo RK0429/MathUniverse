@@ -95,16 +95,16 @@ flowchart TD
     U([VS Code]) --save--> LeanFile(.lean)
   end
   subgraph Build
-    LeanFile --lake build:docs--> JSON[doc-gen4 JSON]
-    JSON --post-proc--> MDX[Templated MDX]
-    MDX --Docusaurus build--> HTML
+    LeanFile -- Lean Metaprogramming via 'lake exe genDecls' --> JsonOutput(declarations.json)
+    JsonOutput -- Rust Processor (Deserializes JSON, Templates MDX with Tera/Handlebars) --> MdxOutput(Templated MDX)
+    LeanFile -- Rust Processor (Parses .lean for 'example' blocks via Tree-sitter) --> MdxOutput
+    MdxOutput -- Docusaurus build --> HTML
   end
   subgraph Deploy
     HTML --actions-gh-pages--> GH[GitHub Pages CDN]
   end
   HTML --Algolia crawler--> Index(Full-text index)
   HTML --Graph plugin--> Graph(GraphView)
-
 ```
 
 ### CI/CD Workflow (essential steps)
