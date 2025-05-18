@@ -71,7 +71,7 @@ The following table defines the attributes used in the YAML front-matter:
 | :------------- | :------------------------------------------------------------------------------------------------------------ | :------------------------------------- |
 | `id`           | A unique machine-readable identifier for the page or content item.                                            | `van_der_waerden`                      |
 | `name`         | The human-readable title or name of the content.                                                              | `Van der Waerden's theorem`            |
-| `type`         | The specific kind of content (e.g., theorem, definition, lemma).                                              | `theorem`                              |
+| `type`         | The specific kind of content (axiom, theorem, definition, example).                                           | `theorem`                              |
 | `category`     | The broad branch of mathematics the content belongs to.                                                       | `Pure mathematics`                     |
 | `field`        | A more specific area of mathematics within the category.                                                      | `Discrete Mathematics & Combinatorics` |
 | `subfield`     | A specialized topic or sub-discipline within the field.                                                       | `Ramsey theory`                        |
