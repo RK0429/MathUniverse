@@ -20,7 +20,7 @@ This document outlines a system designed for mathematics students (undergraduate
 | 6   | **One-click dark/light, mobile-first theme** (Docusaurus default)                                                                                                  | No custom CSS needed; theme-classic ships toggle and responsive drawer ([Docusaurus Community Resources](https://docusaurus.io/community/resources?utm_source=chatgpt.com))                                                                                                                                                                                                           |
 | 7   | **Instant publish** through `peaceiris/actions-gh-pages`                                                                                                           | Pushes the static `/build` folder to the `gh-pages` branch – widely adopted (17 k ★) ([GitHub](https://github.com/peaceiris/actions-gh-pages?utm_source=chatgpt.com), [GitHub Marketplace](https://github.com/marketplace/actions/github-pages-action?utm_source=chatgpt.com))                                                                                                        |
 
-### Primary Use Cases (refined)
+### Primary Use Cases
 
 1. **Undergraduate or graduate student** — browses prerequisite panels to spot which lemmas must be learned before tackling a theorem; edits Lean snippets in-browser to test variations.
 2. **Open-content contributor** — forks the repo, writes Lean proofs, opens a PR; CI shows a preview URL with the updated graph, making review intuitive.
