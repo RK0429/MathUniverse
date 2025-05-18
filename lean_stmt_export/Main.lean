@@ -1,4 +1,5 @@
 import Lean
+import Lean.CoreM
 import Lean.Data.Json
 import Lean.Data.NameMap                  -- for `{}`-literals on NameMap
 import LeanStmtExport.ExampleCapture
@@ -27,9 +28,8 @@ def main (args : List String) : IO Unit := do
   let leanFiles := allFiles.filter fun f => f.extension == some ".lean"
   -- convert file paths to module Names
   let moduleNames := leanFiles.map fun f =>
-    let pathStr := String.intercalate (toString FilePath.pathSeparator) f.components
-    Name.mkStr Name.anonymous (pathStr.trimDropExtension.replaceSep ".")
-  let env ← withImportModules moduleNames (init := {}) fun _ => getEnv
+    Name.mkStr Name.anonymous (toString f)
+  let env ← withImportModules moduleNames getEnv
 
   let exampleMap ← LeanStmtExport.ExampleCapture.readExampleMap
   let prereqMap  := gatherPrereqs env.constants.values
