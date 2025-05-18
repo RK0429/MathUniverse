@@ -5,29 +5,31 @@ import LeanStmtExport.ExampleCapture
 
 open Lean System
 
+structure StatementInfo where
+  id            : String
+  kind          : String
+  prerequisites : Array String
+  consequences  : Array String
+deriving ToJson
+
 def gatherPrereqs (decls : Array ConstantInfo) : NameMap (Array Name) :=
-  -- now `{}` works because of the EmptyCollection instance for NameMap
-  decls.foldl {} fun m cinfo =>
+  decls.foldl (init := {}) fun m cinfo =>
     m.insert cinfo.name (cinfo.getUsedConstantsAsSet.toArray)
 
 def invertGraph (m : NameMap (Array Name)) : NameMap (Array Name) :=
-  -- use the top-level RBMap.fold (not a non-existent `.fold` method)
-  Lean.RBMap.fold (fun outMap name deps =>
-    deps.foldl outMap fun mm dep =>
-      let arr := mm.findD dep #[]
-      mm.insert dep (arr.push name)
-  ) {} m
+  m.fold (init := {}) fun outMap name deps =>
+    deps.foldl (init := outMap) fun mm dep =>
+      mm.insert dep ((mm.findD dep #[]).push name)
 
 def main (args : List String) : IO Unit := do
-  let root      := args.headD "."
-  let allFiles  ← FilePath.walkDir root (fun _ => pure true)
-  let leanFiles := allFiles.filter (·.extension == "lean")
+  let root := FilePath.mk (args.headD ".")
+  let allFiles ← FilePath.walkDir root (fun _ => pure true)
+  let leanFiles := allFiles.filter fun f => f.extension == some ".lean"
   -- convert file paths to module Names
   let moduleNames := leanFiles.map fun f =>
     let pathStr := String.intercalate (toString FilePath.pathSeparator) f.components
-    -- drop “.lean” and replace separators with “.”
-    Name.mkString Name.anonymous (pathStr.trimDropExtension.replaceSep ".")
-  let env ← Lean.Core.withImportModules moduleNames getEnv
+    Name.mkStr Name.anonymous (pathStr.trimDropExtension.replaceSep ".")
+  let env ← withImportModules moduleNames (init := {}) fun _ => getEnv
 
   let exampleMap ← LeanStmtExport.ExampleCapture.readExampleMap
   let prereqMap  := gatherPrereqs env.constants.values
