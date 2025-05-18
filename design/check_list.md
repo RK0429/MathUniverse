@@ -28,8 +28,8 @@ You will set up Lean 4 with VS Code, generate semantic JSON docs via **doc-gen4*
 
 ## 4 · Documentation generation
 
-- [x]  Add **doc-gen4** to `lakefile.lean` (`require doc-gen4 from git`).([GitHub](https://github.com/leanprover/doc-gen4?utm_source=chatgpt.com))
-- [x]  Run `lake build :docs` once; inspect the `build/doc-gen4/json/` folder for semantic JSON.([GitHub](https://github.com/leanprover/doc-gen4?utm_source=chatgpt.com))
+- [x]  Add **doc-gen4** to `lakefile.toml` (`require doc-gen4 from git`).([GitHub](https://github.com/leanprover/doc-gen4?utm_source=chatgpt.com))
+- [x]  Run `lake build MathUniverse:docs` once; inspect the `docbuild/.lake/build/doc-data/` folder for semantic JSON.([GitHub](https://github.com/leanprover/doc-gen4?utm_source=chatgpt.com))
 
 ## 5 · Post-processing JSON → MDX
 
