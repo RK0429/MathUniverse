@@ -1,0 +1,10 @@
+name = "lean_stmt_export"
+version = "0.1.0"
+defaultTargets = ["lean_stmt_export"]
+
+[[lean_lib]]
+name = "LeanStmtExport"
+
+[[lean_exe]]
+name = "lean_stmt_export"
+root = "Main"
