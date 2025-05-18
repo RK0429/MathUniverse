@@ -12,9 +12,9 @@
                 "cwd": "${workspaceFolder}"
             },
             "group": "build",
-            // "presentation": {
-            //     "reveal": "silent"
-            // },
+            "presentation": {
+                "reveal": "silent"
+            },
             "problemMatcher": []
         },
         {
@@ -27,9 +27,9 @@
             "cwd": "${workspaceFolder}/docbuild"
             },
             "group": "build",
-            // "presentation": {
-            //     "reveal": "silent"
-            // },
+            "presentation": {
+                "reveal": "silent"
+            },
             "problemMatcher": []
         },
         {
