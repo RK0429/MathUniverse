@@ -34,22 +34,24 @@ def constantKindToString : ConstantKind → String
 
 def main (args : List String) : IO Unit := do
   let root     := FilePath.mk (args.headD ".")
-  let allFiles ← FilePath.walkDir root (fun _ => pure true)
+  let allFiles ← FilePath.walkDir root fun _ => pure true
   let leanFiles := allFiles.filter fun f => f.extension == some ".lean"
 
-  -- 2) Build an Array Import (not Array Name)
-  let moduleImports : Array Import := leanFiles.map fun f =>
-    { module    := Name.mkStr Name.anonymous (toString f)
-      importAll := true }
+  -- 2) Build Array Name
+  let moduleNames :=
+    leanFiles.map fun f =>
+      (toString f).toSubstring.dropExtension.toName
 
-  -- now typechecks:
-  let env ← withImportModules moduleImports getEnv
+  -- 3) Import all modules and get the environment
+  let env : Environment ←
+    withImportModules moduleNames do
+      getEnv
 
   let exampleMap ← LeanStmtExport.ExampleCapture.readExampleMap
   let decls       := (env.constants.toList.map Prod.snd).toArray
   let prereqMap   := gatherPrereqs decls
 
-  -- merge exampleMap into prereqMap
+  -- ... rest of your code unchanged ...
   let mergedMap := Lean.RBMap.fold (fun m k xs =>
     let old := m.findD k #[]
     m.insert k (old ++ xs)
@@ -57,14 +59,13 @@ def main (args : List String) : IO Unit := do
 
   let consMap := invertGraph mergedMap
 
-  -- build the list of JSON-serializable infos
   let infosList := (mergedMap.toList.map Prod.fst).map fun nm =>
     let kind := match env.find? nm with
       | some cinfo => ConstantKind.ofConstantInfo cinfo
       | none       => ConstantKind.axiom
     StatementInfo.mk
       nm.toString
-      (constantKindToString kind)               -- use helper here
+      (constantKindToString kind)
       ((prereqMap.findD nm #[]).map toString)
       ((consMap.findD nm #[]).map toString)
 
