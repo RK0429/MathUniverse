@@ -1,47 +1,44 @@
 // .vscode/tasks.json
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "Lean: build (root)",
-            "type": "shell",
-            "command": "lake",
-            "args": ["build"],
-            "options": {
-                // run in your workspace root
-                "cwd": "${workspaceFolder}"
-            },
-            "group": "build",
-            "presentation": {
-                "reveal": "silent"
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "Lean: build MathUniverse docs",
-            "type": "shell",
-            "command": "lake",
-            "args": ["build", "MathUniverse:docs"],
-            "options": {
-            // run in the docbuild subfolder
-            "cwd": "${workspaceFolder}/docbuild"
-            },
-            "group": "build",
-            "presentation": {
-                "reveal": "silent"
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "Lean: full docs build",
-            "type": "shell",
-            "dependsOrder": "sequence",
-            "group": "build",
-            "dependsOn": [
-                "Lean: build (root)",
-                "Lean: build MathUniverse docs"
-            ],
-            "presentation": { "reveal": "silent" }
-        }
-    ]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Lean: build (root)",
+      "type": "shell",
+      "command": "lake",
+      "args": ["build"],
+      "options": {
+        // run in your workspace root
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "silent"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Lean: build MathUniverse docs",
+      "type": "shell",
+      "command": "lake",
+      "args": ["build", "MathUniverse:docs"],
+      "options": {
+        // run in the docbuild subfolder
+        "cwd": "${workspaceFolder}/docbuild"
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "silent"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Lean: full docs build",
+      "type": "shell",
+      "dependsOrder": "sequence",
+      "group": "build",
+      "dependsOn": ["Lean: build (root)", "Lean: build MathUniverse docs"],
+      "presentation": { "reveal": "silent" }
+    }
+  ]
 }
