@@ -1,0 +1,10 @@
+name = "lean-parser"
+version = "0.1.0"
+defaultTargets = ["lean-parser"]
+
+[[lean_lib]]
+name = "LeanParser"
+
+[[lean_exe]]
+name = "lean-parser"
+root = "Main"

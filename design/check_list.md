@@ -8,7 +8,7 @@ Before diving into the lists, here’s the big picture: you’ll stand up **two 
 
 * [x] **Create the monorepo** (e.g. `mathuniverse/`) with two top-level dirs: `lean/` and `mdx-gen/` (Rust).
 * [x] **Install Lean 4 + `lake`** via `elan`, verify with `lake -h`. ([GitHub][1])
-* [ ] **Add `genDecls` executable** in `lean/lakefile.lean`; expose `main` that calls `Lean.Meta.getDecls` and writes `declarations.json`. Use the sample in Lake’s README as a template. ([Leanコミュニティ][2])
+* [ ] **Add `genDecls` executable** in `lean/lakefile.toml`; expose `main` that calls `Lean.Meta.getDecls` and writes `declarations.json`. Use the sample in Lake’s README as a template. ([Leanコミュニティ][2])
 * [x] **Install the Rust tool-chain** (`rustup toolchain install stable`), then `cargo new mdx-gen --bin`.
 * [x] **Add Rust dependencies** in `mdx-gen/Cargo.toml`:
 
