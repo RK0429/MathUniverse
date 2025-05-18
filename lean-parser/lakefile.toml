@@ -9,8 +9,6 @@ name = "LeanParser"
 name = "lean-parser"
 root = "Main"
 
-[package.executables.genDecls]
-root = "GenDecls/Main"
-
-[package]
-srcDirs = ["src", "lean-parser/src"]
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
