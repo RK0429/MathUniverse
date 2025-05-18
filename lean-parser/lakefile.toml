@@ -1,5 +1,6 @@
 name = "lean-parser"
 version = "0.1.0"
+bootstrap = true
 defaultTargets = ["lean-parser"]
 
 [[lean_lib]]
