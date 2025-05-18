@@ -23,7 +23,7 @@ Before diving into the lists, here’s the big picture: you’ll stand up **two 
   ```
 
   *Tera* and *Handlebars* are both mature; pick one. ([Keats][3], [GitHub][4])
-* [ ] **Initial commit** (`git init`, push to GitHub).
+* [x] **Initial commit** (`git init`, push to GitHub).
 
 ---
 
