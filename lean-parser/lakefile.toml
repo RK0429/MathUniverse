@@ -8,3 +8,6 @@ name = "LeanParser"
 [[lean_exe]]
 name = "lean-parser"
 root = "Main"
+
+[package.executables.genDecls]
+root = "GenDecls/Main"
