@@ -23,8 +23,8 @@ You will set up Lean 4 with VS Code, generate semantic JSON docs via **doc-gen4*
 
 ## 3 · Authoring workflow
 
-- [x]  **Enable zero-friction capture**: any `.lean` file saved in VS Code triggers `lake build :docs` via the extension's built-in watcher. Add this to `.vscode/tasks.json` if you want manual control.([Visual Studio Code](https://code.visualstudio.com/docs/editor/tasks?utm_source=chatgpt.com), [GitHub](https://github.com/leanprover/vscode-lean4?utm_source=chatgpt.com))
-- [x]  Write your first theorem or definition inside `MyMathLib/`. Verify `lake build` passes.
+- [x]  **Enable zero-friction capture**: any `.lean` file saved in VS Code triggers `lake build && cd docbuild && lake build MathUniverse:docs` via the extension's built-in watcher. Add this to `.vscode/tasks.json` if you want manual control.([Visual Studio Code](https://code.visualstudio.com/docs/editor/tasks?utm_source=chatgpt.com), [GitHub](https://github.com/leanprover/vscode-lean4?utm_source=chatgpt.com))
+- [x]  Write your first theorem or definition inside `MathUniverse/`. Verify `lake build` passes.
 
 ## 4 · Documentation generation
 
