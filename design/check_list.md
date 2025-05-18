@@ -17,8 +17,8 @@ You will set up Lean 4 with VS Code, generate semantic JSON docs via **doc-gen4*
 
 ## 2 · Repository scaffolding
 
-- [x]  `git init my-math-site && cd my-math-site`
-- [x]  `lake init MyMathLib` – creates Lean project with `lakefile.lean` and `lean-toolchain`.([GitHub](https://github.com/leanprover/lean4/blob/master/src/lake/README.md?utm_source=chatgpt.com))
+- [x]  `git init MathUniverse && cd MathUniverse`
+- [x]  `lake init` – creates Lean project with `lakefile.toml` and `lean-toolchain`.([GitHub](https://github.com/leanprover/lean4/blob/master/src/lake/README.md?utm_source=chatgpt.com))
 - [x]  Commit the fresh repo and push to `origin/main`.
 
 ## 3 · Authoring workflow
