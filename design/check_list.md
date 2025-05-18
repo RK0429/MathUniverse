@@ -10,7 +10,7 @@ Before diving into the lists, here’s the big picture: you’ll stand up **two 
 * [x] **Install Lean 4 + `lake`** via `elan`, verify with `lake -h`. ([GitHub][1])
 * [ ] **Add `genDecls` executable** in `lean/lakefile.lean`; expose `main` that calls `Lean.Meta.getDecls` and writes `declarations.json`. Use the sample in Lake’s README as a template. ([Leanコミュニティ][2])
 * [x] **Install the Rust tool-chain** (`rustup toolchain install stable`), then `cargo new mdx-gen --bin`.
-* [ ] **Add Rust dependencies** in `mdx-gen/Cargo.toml`:
+* [x] **Add Rust dependencies** in `mdx-gen/Cargo.toml`:
 
   ```toml
   [dependencies]
@@ -82,6 +82,7 @@ Before diving into the lists, here’s the big picture: you’ll stand up **two 
     ]
   ]
   ```
+
 * [ ] **Add GraphView plugin** (`npm i @arsero/docusaurus-graph`) and update `docusaurus.config.js`:
 
   ````js
@@ -89,6 +90,7 @@ Before diving into the lists, here’s the big picture: you’ll stand up **two 
   graph: { contentPath: 'docs/formal' }
   ``` :contentReference[oaicite:6]{index=6}  
   ````
+
 * [ ] **Copy `<LeanPlayground>` component** from *lean4web* (or install via `npm i lean4web`). ([GitHub][8])
 * [ ] **Place generated MDX** under `docs/formal/`; Docusaurus auto-discovers.
 
@@ -191,6 +193,7 @@ The Lean community suggests caching `elan` to cut mathlib rebuild time. ([GitHub
   }
   ``` :contentReference[oaicite:14]{index=14}  
   ````
+
 * **Add `SitemapPlugin`** in Docusaurus for crawler friendliness (`npm i @docusaurus/plugin-sitemap`).
 
 ---
