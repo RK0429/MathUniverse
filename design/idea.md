@@ -1,18 +1,24 @@
 # Idea
 
+This document outlines the design for MathUniverse, an interactive, web-based knowledge OS for formal mathematics. It aims to bridge rigorous Lean proofs with reader-friendly explanatory content, leveraging automated documentation generation, interactive code widgets, and visual knowledge graphs to create a dynamic learning and research environment.
+
+## Target Audience
+
+This document outlines a system designed for mathematics students (undergraduate and graduate), researchers, Lean language users, and open-source contributors interested in creating and exploring an interactive formal mathematics knowledge base.
+
 ## UX Design
 
 ### Core Features (extended)
 
 | #   | Feature                                                                                                                                                            | Design Notes                                                                                                                                                                                                                                                                                                                                                                          |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Zero-friction capture** — commit Lean files anywhere in the repo; saving them in VS Code auto-triggers `lake build :docs` via the Lean4 extension’s “watch” mode | VS Code extension publishes file-save events and can run arbitrary tasks – lean4-specific tasks are first-class ([GitHub](https://github.com/leanprover/vscode-lean4?utm_source=chatgpt.com))                                                                                                                                                                                         |
+| 1   | **Zero-friction capture** — commit Lean files anywhere in the repo; saving them in VS Code auto-triggers `lake build :docs` via the Lean4 extension's "watch" mode | VS Code extension publishes file-save events and can run arbitrary tasks – lean4-specific tasks are first-class ([GitHub](https://github.com/leanprover/vscode-lean4?utm_source=chatgpt.com))                                                                                                                                                                                         |
 | 2   | **Automatic article generation** with `doc-gen4` → JSON → MDX                                                                                                      | `doc-gen4` walks every declaration, emits semantic JSON, and renders default HTML – you hook a post-processor that rewrites JSON → the templated Markdown below ([GitHub](https://github.com/leanprover/doc-gen4?utm_source=chatgpt.com), [Leanコミュニティ](https://leanprover-community.github.io/archive/stream/270676-lean4/topic/doc-gen4.20broken.html?utm_source=chatgpt.com)) |
 | 3   | **Interactive code blocks** via *lean4web* playground widgets                                                                                                      | Each theorem/definition renders an editable, browser-side Lean editor (server mode possible for large mathlib) ([live.lean-lang.org](https://live.lean-lang.org/?utm_source=chatgpt.com), [GitHub](https://github.com/leanprover-community/lean4web?utm_source=chatgpt.com))                                                                                                          |
-| 4   | **Visual knowledge graph & backlinks** powered by *Docusaurus GraphView*                                                                                           | GraphView reads MDX front-matter and note-graph metadata to draw a force-directed graph ([GitHub](https://github.com/Arsero/docusaurus-graph?utm_source=chatgpt.com), [docusaurus.io](https://docusaurus.io/community/resources?utm_source=chatgpt.com))                                                                                                                              |
-| 5   | **Full-text, typo-tolerant search** with Algolia DocSearch                                                                                                         | Free for OSS; crawler auto-indexes every deploy – add the snippet to your theme ([docsearch.algolia.com](https://docsearch.algolia.com/?utm_source=chatgpt.com), [docsearch.algolia.com](https://docsearch.algolia.com/docs/docsearch-program?utm_source=chatgpt.com))                                                                                                                |
-| 6   | **One-click dark/light, mobile-first theme** (Docusaurus default)                                                                                                  | No custom CSS needed; theme-classic ships toggle and responsive drawer ([docusaurus.io](https://docusaurus.io/community/resources?utm_source=chatgpt.com))                                                                                                                                                                                                                            |
-| 7   | **Instant publish** through `peaceiris/actions-gh-pages`                                                                                                           | Pushes the static `/build` folder to the `gh-pages` branch – widely adopted (17 k ★) ([GitHub](https://github.com/peaceiris/actions-gh-pages?utm_source=chatgpt.com), [GitHub](https://github.com/marketplace/actions/github-pages-action?utm_source=chatgpt.com))                                                                                                                    |
+| 4   | **Visual knowledge graph & backlinks** powered by *Docusaurus GraphView*                                                                                           | GraphView reads MDX front-matter and note-graph metadata to draw a force-directed graph ([GitHub](https://github.com/Arsero/docusaurus-graph?utm_source=chatgpt.com), [Docusaurus Community Resources](https://docusaurus.io/community/resources?utm_source=chatgpt.com))                                                                                                             |
+| 5   | **Full-text, typo-tolerant search** with Algolia DocSearch                                                                                                         | Free for OSS; crawler auto-indexes every deploy – add the snippet to your theme ([DocSearch Site](https://docsearch.algolia.com/?utm_source=chatgpt.com), [DocSearch Program](https://docsearch.algolia.com/docs/docsearch-program?utm_source=chatgpt.com))                                                                                                                           |
+| 6   | **One-click dark/light, mobile-first theme** (Docusaurus default)                                                                                                  | No custom CSS needed; theme-classic ships toggle and responsive drawer ([Docusaurus Community Resources](https://docusaurus.io/community/resources?utm_source=chatgpt.com))                                                                                                                                                                                                           |
+| 7   | **Instant publish** through `peaceiris/actions-gh-pages`                                                                                                           | Pushes the static `/build` folder to the `gh-pages` branch – widely adopted (17 k ★) ([GitHub](https://github.com/peaceiris/actions-gh-pages?utm_source=chatgpt.com), [GitHub Marketplace](https://github.com/marketplace/actions/github-pages-action?utm_source=chatgpt.com))                                                                                                        |
 
 ### Primary Use Cases (refined)
 
@@ -29,7 +35,7 @@ Every generated page now carries *two* blocks:
 ```yaml
 # YAML front-matter (human-friendly)
 id: van_der_waerden
-name: Van der Waerden’s theorem
+name: Van der Waerden's theorem
 type: theorem
 uses: [szemeredi, arithmetic_progression]
 serves: [polychromatic_vdw]
@@ -45,7 +51,7 @@ doi: 10.1234/vdw-lean2025
   "@context": "https://schema.org",
   "@type": "ScholarlyArticle",
   "identifier": "van_der_waerden",
-  "name": "Van der Waerden’s theorem",
+  "name": "Van der Waerden's theorem",
   "keywords": ["combinatorics", "ramsey theory"],
   "version": "ab12c34",
   "isBasedOn": "https://github.com/user/repo/tree/ab12c34",
@@ -53,9 +59,7 @@ doi: 10.1234/vdw-lean2025
 }
 ```
 
-```
-
-The JSON-LD block makes the knowledge graph machine-queryable and SEO-friendly ([schema.org](https://schema.org/ScholarlyArticle?utm_source=chatgpt.com)).
+The JSON-LD block makes the knowledge graph machine-queryable (e.g., for academic search engines or custom API integrations) and SEO-friendly by adhering to standard schemas like [schema.org](https://schema.org/ScholarlyArticle?utm_source=chatgpt.com). Fields like `isBasedOn` and `version` allow precise tracking of provenance and updates.
 
 ---
 
@@ -126,8 +130,9 @@ import LeanPlayground from '@site/src/components/LeanPlayground';
 The finite coloring version of …
 
 <LeanPlayground code={`import Mathlib
-theorem ...` } />
+theorem ...`} />
 
+{/* The uses.map(link) and serves.map(link) functions dynamically render lists of prerequisite and consequence theorems/definitions as clickable links, populated from the page's front-matter. */}
 :::tip Prerequisites
 {uses.map(link)}
 :::
@@ -142,11 +147,11 @@ The `<LeanPlayground>` component comes from *lean4web* and spins up an in-browse
 
 ### Global Graph
 
-Enable the `@arsero/docusaurus-graph` plugin and point it to the compiled MDX directory; the sidebar gets a “Graph” button that opens an interactive, zoomable dependency map of all pages ([GitHub](https://github.com/Arsero/docusaurus-graph?utm_source=chatgpt.com)).
+Enable the `@arsero/docusaurus-graph` plugin and point it to the compiled MDX directory; the sidebar gets a "Graph" button that opens an interactive, zoomable dependency map of all pages ([GitHub](https://github.com/Arsero/docusaurus-graph?utm_source=chatgpt.com)).
 
 ### Search
 
-Add the DocSearch snippet to `docusaurus.config.js`; Algolia’s crawler runs automatically on every deploy, giving blazingly fast, typo-tolerant search – free for open-source sites ([docsearch.algolia.com](https://docsearch.algolia.com/?utm_source=chatgpt.com), [docsearch.algolia.com](https://docsearch.algolia.com/docs/docsearch-program?utm_source=chatgpt.com)).
+Add the DocSearch snippet to `docusaurus.config.js`; Algolia's crawler runs automatically on every deploy, giving blazingly fast, typo-tolerant search – free for open-source sites ([docsearch.algolia.com](https://docsearch.algolia.com/?utm_source=chatgpt.com), [docsearch.algolia.com](https://docsearch.algolia.com/docs/docsearch-program?utm_source=chatgpt.com)).
 
 ### Math Rendering
 
@@ -156,11 +161,11 @@ Docusaurus pipes Markdown through Remark/rehype; enable KaTeX or MathJax via the
 
 ## Future Roadmap
 
-| Phase | Goal                                         | Candidate Tools                                 |
-| ----- | -------------------------------------------- | ----------------------------------------------- |
-| v1.1  | REST / GraphQL endpoint for theorem metadata | Next.js API or Docusaurus + next-plugin-graphql |
-| v1.2  | Obsidian vault export with backlinks         | `obsidian-export` + custom script               |
-| v1.3  | Citation graph overlay (DOIs, MR numbers)    | Crossref API → JSON-LD enrichment               |
+| Phase | Goal                                         | Candidate Tools                                                                                       |
+| ----- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| v1.1  | REST / GraphQL endpoint for theorem metadata | Next.js API (for dedicated API routes) or Docusaurus + `next-plugin-graphql` (for integrated GraphQL) |
+| v1.2  | Obsidian vault export with backlinks         | `obsidian-export` (leverage existing exporter) + custom script (for bespoke backlink formatting)      |
+| v1.3  | Citation graph overlay (DOIs, MR numbers)    | Crossref API → JSON-LD enrichment (automated metadata fetching and integration)                       |
 
 ---
 
