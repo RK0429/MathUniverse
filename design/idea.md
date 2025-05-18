@@ -144,28 +144,117 @@ The flow fails fast on Lean errors; the cache prevents a full mathlib recompile 
 
 ### Page Template (MDX excerpt)
 
+#### Theorem Page Template (MDX excerpt)
+
 ```markdown
 import LeanPlayground from '@site/src/components/LeanPlayground';
 
 ## Theorem
 
-The finite coloring version of …
+<LeanPlayground code={`{{insert the theorem here}}`} />
 
-<LeanPlayground code={`import Mathlib
-theorem ...`} />
+## Proof
 
-{/* The uses.map(link) and serves.map(link) functions dynamically render lists of prerequisite and consequence theorems/definitions as clickable links, populated from the page's front-matter. */}
-:::tip Prerequisites
+<LeanPlayground code={`{{insert the proof here}}`} />
+
+## Examples
+
+{/* examples.map(link) will dynamically render links to example pages, populated from the page's front-matter. */}
+{Array.isArray(examples) && examples.length > 0 && (
+  <ul>
+    {examples.map(ex => (
+      <li key={ex.id}><a href={ex.url}>{ex.name}</a></li>
+    ))}
+  </ul>
+)}
+
+## Related Items
+
+:::tip References To (Prerequisites)
 {uses.map(link)}
 :::
 
-:::info Consequences
+:::info Referenced By (Consequences)
 {serves.map(link)}
 :::
 
 ```
 
-The `<LeanPlayground>` component comes from *lean4web* and spins up an in-browser worker so readers can modify proofs live ([GitHub](https://github.com/leanprover-community/lean4web?utm_source=chatgpt.com)).
+#### Axiom Page Template (MDX excerpt)
+
+```markdown
+import LeanPlayground from '@site/src/components/LeanPlayground';
+
+## Axiom
+
+<LeanPlayground code={`{{insert the axiom here}}`} />
+
+## Examples
+
+{/* examples.map(link) will dynamically render links to example pages, populated from the page's front-matter. */}
+{Array.isArray(examples) && examples.length > 0 && (
+  <ul>
+    {examples.map(ex => (
+      <li key={ex.id}><a href={ex.url}>{ex.name}</a></li>
+    ))}
+  </ul>
+)}
+
+## Related Items
+
+:::info Referenced By (Consequences)
+{serves.map(link)}
+:::
+```
+
+#### Definition Page Template (MDX excerpt)
+
+```markdown
+import LeanPlayground from '@site/src/components/LeanPlayground';
+
+## Definition
+
+<LeanPlayground code={`{{insert the definition here}}`} />
+
+## Examples
+
+{/* examples.map(link) will dynamically render links to example pages, populated from the page's front-matter. */}
+{Array.isArray(examples) && examples.length > 0 && (
+  <ul>
+    {examples.map(ex => (
+      <li key={ex.id}><a href={ex.url}>{ex.name}</a></li>
+    ))}
+  </ul>
+)}
+
+## Related Items
+
+:::tip References To (Prerequisites)
+{uses.map(link)}
+:::
+
+:::info Referenced By (Consequences)
+{serves.map(link)}
+:::
+```
+
+#### Example Page Template (MDX excerpt)
+
+```markdown
+import LeanPlayground from '@site/src/components/LeanPlayground';
+
+## Example
+
+<LeanPlayground code={`{{insert the example here}}`} />
+
+## Related Items
+
+:::tip References To (Prerequisites)
+{uses.map(link)}
+:::
+```
+
+The `<LeanPlayground>` component comes from *lean4web* and spins up an in-browser worker so readers can modify proofs live ([GitHub](https://github.com/leanprover-community/lean4web?utm_source=chatgpt.com)). The `uses.map(link)`, `serves.map(link)`, and `examples.map(link)` functions (or similar logic) would dynamically render lists based on the page's front-matter.
 
 ### Global Graph
 
