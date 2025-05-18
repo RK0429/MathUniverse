@@ -37,6 +37,9 @@ Every generated page now carries *two* blocks:
 id: van_der_waerden
 name: Van der Waerden's theorem
 type: theorem
+category: Pure mathematics
+field: Discrete Mathematics & Combinatorics
+subfield: Ramsey theory
 uses: [szemeredi, arithmetic_progression]
 serves: [polychromatic_vdw]
 examples: []
@@ -58,6 +61,24 @@ doi: 10.1234/vdw-lean2025
   "url": "https://site.example.com/theorems/van_der_waerden"
 }
 ```
+
+The YAML front-matter attributes are defined as follows:
+
+| Attribute      | Definition                                                                                               |
+| -------------- | -------------------------------------------------------------------------------------------------------- |
+| `id`           | A unique machine-readable identifier for the page or concept (e.g., `van_der_waerden`).                  |
+| `name`         | A human-readable name or title for the page or concept (e.g., "Van der Waerden's theorem").              |
+| `type`         | The nature of the content (e.g., `theorem`, `definition`, `article`).                                    |
+| `category`     | The broad area of mathematics the content belongs to (e.g., `Pure mathematics`, `Applied mathematics`).  |
+| `field`        | A specific branch of mathematics within the category (e.g., `Algebra`, `Number Theory`).                 |
+| `subfield`     | A specialized area of study within the field (e.g., `Ramsey theory`, `Algebraic number theory`).         |
+| `uses`         | A list of `id`s of prerequisite concepts or theorems (e.g., `[szemeredi, arithmetic_progression]`).      |
+| `serves`       | A list of `id`s of concepts or theorems that build upon this one (e.g., `[polychromatic_vdw]`).          |
+| `examples`     | A list of `id`s or brief descriptions of illustrative examples related to the content.                   |
+| `git_sha`      | The Git commit SHA associated with the version of the Lean code or content (e.g., `ab12c34`).            |
+| `lean_version` | The version of the Lean language used for the formal proofs (e.g., `4.10.0`).                            |
+| `mathlib_rev`  | The revision or version of the Mathlib library used (e.g., `2025-05-10`).                                |
+| `doi`          | The Digital Object Identifier for the content if it's formally published (e.g., `10.1234/vdw-lean2025`). |
 
 The JSON-LD block makes the knowledge graph machine-queryable (e.g., for academic search engines or custom API integrations) and SEO-friendly by adhering to standard schemas like [schema.org](https://schema.org/ScholarlyArticle?utm_source=chatgpt.com). Fields like `isBasedOn` and `version` allow precise tracking of provenance and updates.
 
