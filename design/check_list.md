@@ -236,7 +236,6 @@ The Lean community suggests caching `elan` to cut mathlib rebuild time. ([GitHub
 [3]: https://keats.github.io/tera/docs/?utm_source=chatgpt.com "Tera - GitHub Pages"
 [4]: https://github.com/sunng87/handlebars-rust?utm_source=chatgpt.com "GitHub - sunng87/handlebars-rust: Rust templating with ..."
 [5]: https://code.visualstudio.com/api/references/vscode-api?utm_source=chatgpt.com "VS Code API | Visual Studio Code Extension API"
-[6]: https://crates.io/crates/tree-sitter-cooklang?utm_source=chatgpt.com "tree-sitter-cooklang - crates.io: Rust Package Registry"
 [7]: https://schema.org/ScholarlyArticle?utm_source=chatgpt.com "ScholarlyArticle - Schema.org Type"
 [8]: https://github.com/leanprover-community/lean4web?utm_source=chatgpt.com "leanprover-community/lean4web: The Lean 4 web editor - GitHub"
 [9]: https://github.com/Arsero/docusaurus-graph?utm_source=chatgpt.com "Arsero/docusaurus-graph - GitHub"
