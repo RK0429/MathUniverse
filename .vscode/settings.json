@@ -1,8 +1,0 @@
-{
-  "triggerTaskOnSave.on": true,
-  "triggerTaskOnSave.tasks": {
-    "Lean: full docs build": ["**/*.lean"]
-  },
-  "triggerTaskOnSave.restart": true,
-  "triggerTaskOnSave.showNotifications": false
-}
