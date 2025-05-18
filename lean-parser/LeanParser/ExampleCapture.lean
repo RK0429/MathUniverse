@@ -23,9 +23,9 @@ syntax (name := exampleCommand) "example" term : command
 
 @[command_elab exampleCommand] def elabExample : CommandElab :=
   fun stx => do
-    let termExpr ← Term.elabTerm stx[1] none
-    let deps := termExpr.getUsedConstantsAsSet.toArray
-    let exName ← mkFreshUserName `example
+    let termExpr ← liftTermElabM (Term.elabTerm stx[1] none)
+    let deps      := termExpr.getUsedConstantsAsSet.toArray
+    let exName    ← liftCoreM (mkFreshUserName `example)
     recordExample exName deps
 
 end LeanParser.ExampleCapture
