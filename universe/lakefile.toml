@@ -1,0 +1,10 @@
+name = "universe"
+version = "0.1.0"
+defaultTargets = ["universe"]
+
+[[lean_lib]]
+name = "Universe"
+
+[[lean_exe]]
+name = "universe"
+root = "Main"
