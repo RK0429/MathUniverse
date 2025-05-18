@@ -35,8 +35,8 @@
       "type": "shell",
       "dependsOrder": "sequence",
       "group": "build",
-      "dependsOn": ["Lean: build (root)", "Lean: build MathUniverse docs"]
-      //   "presentation": { "reveal": "silent" }
+      "dependsOn": ["Lean: build (root)", "Lean: build MathUniverse docs"],
+      "presentation": { "reveal": "silent" }
     }
   ]
 }
