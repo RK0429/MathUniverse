@@ -6,11 +6,11 @@ Before diving into the lists, here's the big picture: you'll stand up **two tigh
 
 ## 1 · Repository & Tool-chain Bootstrap
 
-* [ ] **Create the monorepo** (e.g. `mathuniverse/`) with two top-level dirs: `lean/` and `mdx-gen/` (Rust).
-* [ ] **Install Lean 4 + `lake`** via `elan`, verify with `lake -h`. ([GitHub][1])
+* [x] **Create the monorepo** (e.g. `mathuniverse/`) with two top-level dirs: `lean/` and `mdx-gen/` (Rust).
+* [x] **Install Lean 4 + `lake`** via `elan`, verify with `lake -h`. ([GitHub][1])
 * [ ] **Add `lean_stmt_export` executable** in `lean/lakefile.toml`; expose `main` that calls the necessary Lean functions to generate `stmt_deps.json` as described in `design/lean-parser.md`. ([Leanコミュニティ][2], `design/lean-parser.md`)
-* [ ] **Install the Rust tool-chain** (`rustup toolchain install stable`), then `cargo new mdx-gen --bin`.
-* [ ] **Add Rust dependencies** in `mdx-gen/Cargo.toml`:
+* [x] **Install the Rust tool-chain** (`rustup toolchain install stable`), then `cargo new mdx-gen --bin`.
+* [x] **Add Rust dependencies** in `mdx-gen/Cargo.toml`:
 
   ```toml
   [dependencies]
@@ -23,7 +23,7 @@ Before diving into the lists, here's the big picture: you'll stand up **two tigh
   ```
 
   *Tera* and *Handlebars* are both mature; pick one. ([Keats][3], [GitHub][4])
-* [ ] **Initial commit** (`git init`, push to GitHub).
+* [x] **Initial commit** (`git init`, push to GitHub).
 
 ---
 
