@@ -1,22 +1,32 @@
 import Lean
 import Lean.Data.Json
 open Lean
-open Lean.Environment
+
+/-- Collect all ConstantInfo values from the environment. -/
+def collectDecls (env : Environment) : Array ConstantInfo :=
+  env.constants.fold (init := #[]) fun acc _ cinfo =>
+    acc.push cinfo
+  -- uses SMap.fold on `env.constants` :contentReference[oaicite:0]{index=0}
 
 def main : IO Unit := do
-  -- Run environment import and collect declarations
-  Lean.withImportModules #[`Lean] {} (trustLevel := 1024) fun env => do
-    let declInfos := collectDecls env
-    let json := Lean.Json.arr (declInfos.map toJson)
-    IO.FS.writeFile "declarations.json" (json.pretty)
-    IO.println s!"Exported {declInfos.size} declarations."
+  -- 1. Build a fresh environment importing the core Init module
+  let env ← importModules (imports := #[
+    { module := `Init, importAll := true }
+  ])
+  -- `importModules` lives in `Lean` and returns IO Environment :contentReference[oaicite:1]{index=1}
 
-def collectDecls (env : Environment) : Array ConstantInfo :=
-  -- Convert environment constants to a list of ConstantInfo
-  env.constants.toList.foldl (fun acc entry => acc.push entry.2) #[]
+  -- 2. Pull out all declarations
+  let declInfos := collectDecls env
 
-instance : ToJson ConstantInfo where
-  toJson c := Lean.Json.mkObj
-    [ ("name", toJson c.name)
-    , ("type", toJson c.type)
-    , ("value?", toJson c.value?) ]
+  -- 3. Turn into a JSON array
+  let json := Json.arr (declInfos.map fun c =>
+    Json.mkObj [
+      ("name", Json.str (c.name.toString)),
+      ("type", Json.str (c.type.toString))
+    ]
+  )
+  -- use `Json.arr`+`Json.mkObj` from `Lean.Data.Json` :contentReference[oaicite:2]{index=2}
+
+  -- 4. Write to file and report
+  IO.FS.writeFile "declarations.json" (json.pretty)
+  IO.println s!"Exported {declInfos.size} declarations."
