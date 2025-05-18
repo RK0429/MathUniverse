@@ -6,14 +6,12 @@ open Lean
 def collectDecls (env : Environment) : Array ConstantInfo :=
   env.constants.fold (init := #[]) fun acc _ cinfo =>
     acc.push cinfo
-  -- uses SMap.fold on `env.constants` :contentReference[oaicite:0]{index=0}
 
 def main : IO Unit := do
   -- 1. Build a fresh environment importing the core Init module
   let env ← importModules (imports := #[
     { module := `Init, importAll := true }
   ]) {}
-  -- `importModules` lives in `Lean` and returns IO Environment :contentReference[oaicite:1]{index=1}
 
   -- 2. Pull out all declarations
   let declInfos := collectDecls env
@@ -25,7 +23,6 @@ def main : IO Unit := do
       ("type", Json.str (toString c.type))
     ]
   )
-  -- use `Json.arr`+`Json.mkObj` from `Lean.Data.Json` :contentReference[oaicite:2]{index=2}
 
   -- 4. Write to file and report
   IO.FS.writeFile "declarations.json" (json.pretty)
