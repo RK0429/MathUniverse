@@ -1,142 +1,214 @@
 # Lean Parser
 
-Here’s a concrete design for a Lean 4 package—let’s call it **lean_stmt_export**—that walks a directory of `.lean` files, builds a unified environment, and emits JSON describing each statement’s ID, kind, and dependencies.
-
-In summary, the package uses `System.FilePath.walkDir` and `IO.FS` to find all source files recursively ([loogle.lean-lang.org](https://loogle.lean-lang.org/?q=IO)), loads them into a single `Environment` via `Lean.Core.withImportModules` in the `MetaM` monad , iterates over `env.constants.values` to collect every `ConstantInfo` , classifies each via `ConstantKind.ofConstantInfo` , extracts referenced names with `ConstantInfo.getUsedConstantsAsSet` , and finally serializes an array of `{ id, kind, deps }` objects using `Lean.Data.Json`’s `ToJson` machinery.
-
 ## Overview
 
-The **lean_stmt_export** package provides both a CLI executable and an optional Lake plugin to analyze Lean 4 projects . It outputs a JSON array where each entry has:
+The **lean\_stmt\_export** package scans a Lean 4 project, loads every module into a single `Environment`, and emits a JSON array of **all** statements—including `axiom`, `def`, `theorem`/`lemma`, **and** `example` blocks—with for each:
 
-- **id**: the fully qualified `Name` of the declaration
-- **kind**: one of `"axiom"`, `"defn"`, `"thm"`, `"opaque"`, etc.
-- **deps**: an array of strings naming every other constant it references .
+* **`id`**: fully qualified name (string)
+* **`kind`**: one of `"axiom"`, `"defn"`, `"thm"`, `"opaque"`, `"induct"`, `"ctor"`, `"recursor"`, **or** `"example"`
+* **`prerequisites`**: array of constant names it refers to
+* **`consequences`**: array of statement IDs that refer to it
+
+It can be invoked as a **CLI executable** or integrated as a **Lake plugin**.
+
+---
 
 ## 1. File Traversal & Module Loading
 
-1. **Collect files**
+1. **Collect `.lean` files**
 
-    ```lean
-    let files ← System.FilePath.walkDir rootDir
-      (fun _ => pure true)   -- visit all subdirectories
-    let leanFiles := files.filter (·.extension == ".lean")
-    
-    ```
-
-    Uses `walkDir : FilePath → (FilePath → IO Bool) → IO (Array FilePath)` ([loogle.lean-lang.org](https://loogle.lean-lang.org/?q=IO)).
+   ```lean
+   let files ← System.FilePath.walkDir rootDir (fun _ => pure true)
+   let leanFiles := files.filter (·.extension == ".lean")
+   ```
 
 2. **Derive module names**
+   Strip `rootDir` prefix and replace path separators with dots:
 
-    Drop the project-root prefix and replace path separators with dots to get Lean module names.
+   ```lean
+   let moduleNames := leanFiles.map (fun f => 
+     (f.dropPrefix rootDir).toString.trimDropExtension.replaceSep "."
+   )
+   ```
 
-3. **Build environment**
+3. **Build unified environment**
 
-    ```lean
-    let env ← Lean.Core.withImportModules moduleNames
-      (init := {})          -- start from empty
-      fun _ => getEnv
-    
-    ```
+   ```lean
+   let env ← Lean.Core.withImportModules moduleNames (init := {}) fun _ => getEnv
+   ```
 
-    Runs in the `MetaM` monad to import every module and execute initializers .
+   This runs in `MetaM`, imports every module, and executes initializers.
 
-## 2. Declaration Extraction & Classification
+---
 
-1. **Gather all declarations**
+## 2. Capturing `example` Statements
 
-    ```lean
-    let decls := env.constants.values
-    
-    ```
+Lean's `example` command does **not** produce a `ConstantInfo`. To include them:
 
-    `env.constants : SMap Name ConstantInfo` holds every kernel-checked declaration .
+1. **Register a command elaborator**
+   In `ExampleCapture.lean`:
 
-2. **Classify each**
+   ```lean
+   import Lean
 
-    ```lean
-    let kind := ConstantKind.ofConstantInfo cinfo
-    
-    ```
+   open Lean Elab Command
 
-    Distinguishes constructors for `axiomInfo`, `defnInfo`, `thmInfo`, `opaque`, `inductInfo`, etc. .
+   syntax (name := exampleCommand) "example" term : command
 
-## 3. Dependency Analysis
+   @[command_elab exampleCommand] def elabExample : CommandElab := fun stx => do
+     -- 1. Elaborate the term to get its Expr
+     let termExpr ← Term.elabTerm stx[1] none
+     let consts ← pure (termExpr.getUsedConstantsAsSet.toArray)
+     -- 2. Generate a fresh synthetic name for this example
+     let exName ← mkFreshUserName `example
+     -- 3. Record it in a global IORef or pass into the final JSON collector
+     recordExample exName consts
+   ```
 
-For each `cinfo : ConstantInfo`:
+2. **Accumulating examples**
+   Maintain an `IO.Ref` or `NameMap` of:
+
+   ```lean
+   NameMap (Array Name)  -- maps synthetic example names → dependencies
+   ```
+
+3. **Merge with `env.constants`** in the final export.
+
+---
+
+## 3. Declaration Extraction, Classification & Prerequisites
+
+1. **Gather all real declarations**
+
+   ```lean
+   let decls := env.constants.values
+   ```
+
+2. **Build a prerequisites map**
+
+   ```lean
+   def gatherPrereqs (decls : Array ConstantInfo) : NameMap (Array Name) :=
+     decls.foldl (init := {}) fun m cinfo =>
+       m.insert cinfo.name cinfo.getUsedConstantsAsSet.toArray
+   ```
+
+3. **Include synthetic examples**
+
+   ```lean
+   let prereqMap := (gatherPrereqs decls).merge exampleMap (fun _ realDeps exDeps =>
+     realDeps ++ exDeps
+   )
+   ```
+
+---
+
+## 4. Building Consequences
+
+Invert `prereqMap` to get, for each name, the list of statements that depend on it:
 
 ```lean
-let depsSet := cinfo.getUsedConstantsAsSet
-let depsArray := depsSet.toArray.map toString
+def invertGraph (m : NameMap (Array Name)) : NameMap (Array Name) :=
+  m.fold (init := {} : NameMap (Array Name)) fun outMap name deps =>
+    deps.foldl (init := outMap) fun mm dep =>
+      let arr := mm.findD dep #[]
+      mm.insert dep (arr.push name)
 
+let consMap := invertGraph prereqMap
 ```
 
-`getUsedConstantsAsSet` traverses both the type and the body to collect every constant name . Converting to `String` ensures JSON compatibility .
+---
 
-## 4. JSON Serialization
+## 5. JSON Serialization
 
-Define a data structure:
+Define the schema:
 
 ```lean
 structure StatementInfo where
-  id   : String
-  kind : String
-  deps : Array String
+  id            : String
+  kind          : String
+  prerequisites : Array String
+  consequences  : Array String
 deriving ToJson
-
 ```
 
-Using `deriving ToJson` (and `FromJson` if desired) lets Lean auto-generate conversion routines . Then:
+Produce the full array:
 
 ```lean
-let infos : Array StatementInfo := decls.map fun cinfo =>
-  { id := cinfo.name.toString
-  , kind := (ConstantKind.ofConstantInfo cinfo).toString
-  , deps := (cinfo.getUsedConstantsAsSet.toArray.map toString)
+let allNames := (prereqMap.toList.map Prod.fst) |>.toArray
+let infos := allNames.map fun nm =>
+  let kind := match env.find? nm with
+    | some cinfo => ConstantKind.ofConstantInfo cinfo
+    | none       => -- synthetic example
+      if exampleMap.contains nm then ConstantKind.example else ConstantKind.unknown
+  { id            := nm.toString
+  , kind          := kind.toString
+  , prerequisites := prereqMap.findD nm #[].map toString
+  , consequences  := consMap.findD nm #[].map toString
   }
-let jsonOut := Json.pretty! infos
-IO.println jsonOut
-
+IO.FS.writeFile (root / "stmt_deps.json") (Json.pretty! infos)
 ```
 
-`Json.pretty!` comes from `Lean.Data.Json.Printer` and produces a well-formatted JSON string .
+---
 
-## 5. Putting It All Together
-
-Below is a sketch of `Main.lean` in the package’s `src` directory:
+## 6. Updated `Main.lean` Sketch
 
 ```lean
 import Lean
 import Lean.Data.Json
+import ExampleCapture  -- registers the example elaborator
+
 open Lean Meta System
 
 def main (args : List String) : IO Unit := do
-  let root := args.headD "."    -- project root
-  let files ← System.FilePath.walkDir root (fun _ => pure true)
-  let mods  := files.filter (·.extension == ".lean")
-                 |>.map (fun f => -- derive module name)
-  let env ← Core.withImportModules mods (init := {}) fun _ => getEnv
-  let decls := env.constants.values
-  let infos := decls.map fun cinfo =>
-    { id   := cinfo.name.toString
-    , kind := (ConstantKind.ofConstantInfo cinfo).toString
-    , deps := (cinfo.getUsedConstantsAsSet.toArray.map toString)
+  let root         := args.headD "."  
+  let allFiles     ← FilePath.walkDir root (fun _ => pure true)
+  let leanFiles    := allFiles.filter (·.extension == ".lean")
+  let moduleNames  := leanFiles.map (fun f => 
+                       (f.dropPrefix root).toString.trimDropExtension.replaceSep ".")
+  let env          ← Core.withImportModules moduleNames (init := {}) fun _ => getEnv
+  let decls        := env.constants.values
+  let realPre      := gatherPrereqs decls
+  let exampleMap   ← readExampleMap      -- from ExampleCapture's IO.Ref
+  let prereqMap    := realPre.merge exampleMap (· ++ ·)
+  let consMap      := invertGraph prereqMap
+  let allNames     := (prereqMap.toList.map Prod.fst) |>.toArray
+  let infos        := allNames.map fun nm =>
+    let kind := match env.find? nm with
+      | some cinfo => ConstantKind.ofConstantInfo cinfo
+      | none       => ConstantKind.example
+    { id            := nm.toString
+    , kind          := kind.toString
+    , prerequisites := prereqMap.findD nm #[].map toString
+    , consequences  := consMap.findD nm #[].map toString
     }
   IO.FS.writeFile (root / "stmt_deps.json") (Json.pretty! infos)
-
 ```
 
-## JSON Schema
+---
+
+## 7. Final JSON Schema Example
 
 ```json
 [
   {
-    "id":   "Math.Universe.Defs.myTheorem",
-    "kind": "thm",
-    "deps": ["Nat.zero", "Nat.succ", "MyLemma"]
+    "id": "Test.foo",
+    "kind": "defn",
+    "prerequisites": ["Nat.add", "Nat.succ"],
+    "consequences": ["Test.foo_add", "Test.foo_example"]
   },
-  …
+  {
+    "id": "Test.foo_add",
+    "kind": "thm",
+    "prerequisites": ["Test.foo", "Eq.refl"],
+    "consequences": []
+  },
+  {
+    "id": "example_1",
+    "kind": "example",
+    "prerequisites": ["Test.foo", "Nat.succ"],
+    "consequences": []
+  }
 ]
-
 ```
 
-This design leverages Lean 4’s standard filesystem IO, metaprogramming API, and JSON serialization to deliver a turnkey tool for dependency analysis in formal developments.
+This design leverages Lean 4's standard filesystem IO, metaprogramming API, and JSON serialization to deliver a turnkey tool for dependency analysis in formal developments.
