@@ -8,7 +8,7 @@ Before diving into the lists, here's the big picture: you'll stand up **two tigh
 
 * [x] **Create the monorepo** (e.g. `mathuniverse/`) with two top-level dirs: `lean/` and `mdx-gen/` (Rust).
 * [x] **Install Lean 4 + `lake`** via `elan`, verify with `lake -h`. ([GitHub][1])
-* [ ] **Add `lean_stmt_export` executable** in `lean/lakefile.toml`; expose `main` that calls the necessary Lean functions to generate `stmt_deps.json` as described in `design/lean-parser.md`. ([Leanコミュニティ][2], `design/lean-parser.md`)
+* [x] **Add `lean_stmt_export` executable** in `lean/lakefile.toml`; expose `main` that calls the necessary Lean functions to generate `stmt_deps.json` as described in `design/lean-parser.md`. ([Leanコミュニティ][2], `design/lean-parser.md`)
 * [x] **Install the Rust tool-chain** (`rustup toolchain install stable`), then `cargo new mdx-gen --bin`.
 * [x] **Add Rust dependencies** in `mdx-gen/Cargo.toml`:
 
