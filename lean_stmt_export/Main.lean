@@ -18,9 +18,17 @@ open LeanStmtExport.ExampleCapture
 Main entry point: gather declaration infos and recorded example dependencies,
 and then print them as pretty JSON.
 -/
-def main : IO Unit := do
-  -- Gather declaration infos
-  let env ← getEnv
+def main (args : List String) : IO Unit := do
+  let file := args.headD "Main.lean"
+  let input ← IO.FS.readFile file
+  let opts := {}
+  -- Elaborate the file and get its environment in IO
+  let (env, success) ← Lean.Elab.runFrontend input opts file `Main
+  unless success do
+    IO.eprintln "Elaboration failed"
+    return
+
+  -- Now `env : Environment` is available in IO
   let declInfos := env.constants.toList.toArray.map fun (_, ci) => getDeclInfo ci
   let declsJson := Json.arr (declInfos.map ToJson.toJson)
 
