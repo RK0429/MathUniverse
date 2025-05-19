@@ -1,9 +1,3 @@
-/-
-Main.lean
-
-This file aggregates all declarations (axioms, definitions, theorems, inductives, etc.) and recorded example dependencies from the environment, and outputs them as structured JSON.
--/
-
 import Lean
 import Lean.Data.Json
 import LeanStmtExport.ExampleCapture
@@ -13,39 +7,93 @@ import Lean.Elab.Command
 open Lean
 open ExportDeps
 open LeanStmtExport.ExampleCapture
+open System
 
 /--
-Main entry point: gather declaration infos and recorded example dependencies,
-and then print them as pretty JSON.
+Parses the JSON output of `lake print-paths` to get the lean search paths.
 -/
+def getLeanPathFromLakeOutput (lakeOutput : String) : IO (List FilePath) := do
+  match Json.parse lakeOutput with
+  | Except.error err => throw <| IO.userError s!"Failed to parse lake print-paths output: {err}"
+  | Except.ok json =>
+    match json.getObjVal? "leanPath" with
+    | Except.error err => throw <| IO.userError s!"'leanPath' not found in lake print-paths output: {err}"
+    | Except.ok leanPathJson =>
+      match leanPathJson.getArr? with
+      | Except.error err => throw <| IO.userError s!"'leanPath' is not an array: {err}"
+      | Except.ok arr =>
+        let paths ← arr.mapM fun pJson =>
+          match pJson.getStr? with
+          | Except.error err => throw <| IO.userError s!"Path in 'leanPath' is not a string: {err}"
+          | Except.ok pStr => pure (FilePath.mk pStr)
+        return paths.toList
+
+/--
+Gets the LEAN_PATH for a given Lake project directory by running `lake print-paths`.
+-/
+def getLeanPathForProject (projectDir : FilePath) : IO (List FilePath) := do
+  IO.println s!"Querying LEAN_PATH for project: {projectDir}"
+  -- Ensure the target project is built (optional, but good practice)
+  let buildProc ← IO.Process.output {
+    cmd := "lake"
+    args := #["build"]
+    cwd := projectDir -- Run 'lake build' in the target project's directory
+  }
+  if buildProc.exitCode != 0 then
+    IO.eprintln s!"Failed to build target project {projectDir}: {buildProc.stderr}"
+    -- Decide if you want to throw an error or continue
+
+  let proc ← IO.Process.output {
+    cmd := "lake"
+    args := #["print-paths"]
+    cwd := projectDir -- Run 'lake print-paths' in the target project's directory
+  }
+  if proc.exitCode != 0 then
+    throw <| IO.userError s!"'lake print-paths' failed for project {projectDir}: {proc.stderr}"
+  getLeanPathFromLakeOutput proc.stdout
+
 def main (args : List String) : IO Unit := do
-  -- Initialize Lean's search path to find standard library modules like 'Init'
+  if args.length < 2 then
+    IO.eprintln "Usage: lean_stmt_export <path_to_target_project_root> <path_to_lean_file_to_process>"
+    IO.Process.exit 1
+
+  let targetProjectDir := FilePath.mk args[0]!
+  let fileToProcess := FilePath.mk args[1]!
+
+  IO.println s!"Target project directory: {targetProjectDir}"
+  IO.println s!"Processing file: {fileToProcess}"
+
   try
-    Lean.initSearchPath (← Lean.findSysroot)
+    -- Get the search paths from the target project
+    let targetProjectLeanPath ← getLeanPathForProject targetProjectDir
+
+    -- Initialize Lean's search path with the paths from the target project.
+    -- This will include the target project's build artifacts and its dependencies (like Mathlib, if used).
+    -- It should also include the Lean stdlib path by default from `lake print-paths`.
+    Lean.initSearchPath (some targetProjectLeanPath)
+
   catch ex =>
-    IO.eprintln s!"Failed to initialize search path: {ex}"
-    -- Decide if you want to exit here or try to continue
-    -- For 'Init' not found, it's likely fatal, so rethrow or exit
+    IO.eprintln s!"Failed to initialize search path for target project: {ex}"
     throw ex
 
-  let file := args.headD "Main.lean" -- Consider if this default is appropriate for your tool's usage
-  IO.println s!"Processing file: {file}" -- Added for debugging
+  let input ← IO.FS.readFile fileToProcess
+  let opts := {}
 
-  let input ← IO.FS.readFile file
-  let opts := {} -- These are elaboration options, not search path configurations
+  -- The module name for runFrontend can often be derived or set to a placeholder.
+  -- For a file like `../universe/Universe/Group.lean`, the module name might be `Universe.Group`.
+  -- Deriving this robustly might require more logic based on `targetProjectDir` and `fileToProcess`.
+  -- For now, using a placeholder or a simple derivation.
+  let moduleName ← IO.RealWorld.moduleNameOfFileName fileToProcess (some targetProjectDir)
+  IO.println s!"Elaborating with module name: {moduleName}"
 
-  -- Elaborate the file and get its environment in IO
-  -- The 'Main' here is a placeholder for the module name being compiled by runFrontend
-  let (env, success) ← Lean.Elab.runFrontend input opts file `Main
+  let (env, success) ← Lean.Elab.runFrontend input opts fileToProcess.toString moduleName
   unless success do
     IO.eprintln "Elaboration failed"
-    IO.Process.exit 1 -- Exit with an error code
+    IO.Process.exit 1
 
-  -- Now env : Environment is available in IO
   let declInfos := env.constants.toList.toArray.map fun (_, ci) => getDeclInfo ci
   let declsJson := Json.arr (declInfos.map ToJson.toJson)
 
-  -- Gather recorded examples
   let exampleMap ← readExampleMap
   let examplePairs := exampleMap.toList.toArray
   let examplesJsonArr := examplePairs.map fun (name, deps) =>
@@ -53,8 +101,5 @@ def main (args : List String) : IO Unit := do
     Json.mkObj [("name", Json.str name.toString), ("deps", Json.arr depsJsonArr)]
   let examplesJson := Json.arr examplesJsonArr
 
-  -- Combine into final JSON object
   let resultJson := Json.mkObj [("declarations", declsJson), ("examples", examplesJson)]
-
-  -- Print to stdout
   IO.println (resultJson.pretty 2)
