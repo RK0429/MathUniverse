@@ -3,6 +3,7 @@ import Lean.Data.Json
 import LeanStmtExport.ExampleCapture
 import LeanStmtExport.ExportDeps
 import Lean.Elab.Command
+import Lean.Util.Path
 
 open Lean
 open ExportDeps
