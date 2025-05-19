@@ -61,13 +61,13 @@ The primary way to use `lean_stmt_export` is via its main executable.
 **Command-Line Interface:**
 
 ```sh
-lake exe lean_stmt_export <path_to_your_lean_file.lean>
+lake exe lean_stmt_export <path_to_target_project_root> <path_to_lean_file_to_process>
 ```
 
 For example, to analyze a file named `MyProject/MyFile.lean`:
 
 ```sh
-lake exe lean_stmt_export MyProject/MyFile.lean
+lake exe lean_stmt_export MyProject MyProject/MyFile.lean
 ```
 
 This will elaborate the specified Lean file and print a JSON object to standard output containing all declarations and captured examples with their dependencies.
