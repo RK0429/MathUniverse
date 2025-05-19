@@ -10,15 +10,14 @@ import LeanStmtExport.ExampleCapture
 import LeanStmtExport.ExportDeps
 
 open Lean
-open Lean.Data.Json
+open ExportDeps
 open LeanStmtExport.ExampleCapture
-open LeanStmtExport.ExportDeps
 
 /--
 Main entry point: gather declaration infos and recorded example dependencies,
 and then print them as pretty JSON.
 -/
-def main : IO Unit := do
+def main : IO Unit := Lean.run do
   -- Gather declaration infos
   let env ← getEnv
   let declInfos := env.constants.toList.toArray.map fun (_, ci) => getDeclInfo ci
@@ -29,11 +28,11 @@ def main : IO Unit := do
   let examplePairs := exampleMap.toList.toArray
   let examplesJsonArr := examplePairs.map fun (name, deps) =>
     let depsJsonArr := deps.map fun n => Json.str n.toString
-    Json.mkObj #[ ("name", Json.str name.toString), ("deps", Json.arr depsJsonArr) ]
+    Json.mkObj [("name", Json.str name.toString), ("deps", Json.arr depsJsonArr)]
   let examplesJson := Json.arr examplesJsonArr
 
   -- Combine into final JSON object
-  let resultJson := Json.mkObj #[ ("declarations", declsJson), ("examples", examplesJson) ]
+  let resultJson := Json.mkObj [("declarations", declsJson), ("examples", examplesJson)]
 
   -- Print formatted JSON to stdout
-  IO.println (resultJson.pretty 2)
+  liftIO $ IO.println (resultJson.pretty 2)
