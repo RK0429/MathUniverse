@@ -30,7 +30,7 @@ def getLeanPathFromLakeOutput (lakeOutput : String) : IO (List FilePath) := do
         return paths.toList
 
 /--
-Gets the LEAN_PATH for a given Lake project directory by running `lake print-paths`.
+Gets the LEAN_PATH for a given Lake project directory by running `lake env print-paths --json`.
 -/
 def getLeanPathForProject (projectDir : FilePath) : IO (List FilePath) := do
   IO.println s!"Querying LEAN_PATH for project: {projectDir}"
@@ -42,15 +42,16 @@ def getLeanPathForProject (projectDir : FilePath) : IO (List FilePath) := do
   }
   if buildProc.exitCode != 0 then
     IO.eprintln s!"Failed to build target project {projectDir}: {buildProc.stderr}"
-    -- Decide if you want to throw an error or continue
+    -- Decide if you want to throw an error or continue if build fails but paths might still be available
 
   let proc ← IO.Process.output {
     cmd := "lake"
-    args := #["print-paths"]
-    cwd := projectDir -- Run 'lake print-paths' in the target project's directory
+    args := #["env", "print-paths", "--json"] -- Changed this line
+    cwd := projectDir -- Run 'lake env print-paths --json' in the target project's directory
   }
   if proc.exitCode != 0 then
-    throw <| IO.userError s!"'lake print-paths' failed for project {projectDir}: {proc.stderr}"
+    -- Update the error message to reflect the new command
+    throw <| IO.userError s!"'lake env print-paths --json' failed for project {projectDir}: {proc.stderr}"
   getLeanPathFromLakeOutput proc.stdout
 
 -- Helper function to get a value from Option within IO, or throw a specific error
