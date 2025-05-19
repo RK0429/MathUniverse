@@ -9,7 +9,6 @@ import Lean.Data.Json
 import LeanStmtExport.ExampleCapture
 import LeanStmtExport.ExportDeps
 import Lean.Elab.Command
-import Lean.Elab.Frontend
 
 open Lean
 open ExportDeps
@@ -17,23 +16,32 @@ open LeanStmtExport.ExampleCapture
 
 /--
 Main entry point: gather declaration infos and recorded example dependencies,
-and then print them as structured JSON.
+and then print them as pretty JSON.
 -/
 def main (args : List String) : IO Unit := do
-  -- 1. Allow `initialize` blocks to run (for any builtins)
-  Lean.enableInitializersExecution
-  -- 2. Discover the Lean sysroot (where the stdlib .olean files live)
-  let sysroot ← IO.ofExcept Lean.findSysroot?
-  -- 3. Populate Lean.searchPathRef from the sysroot and LEAN_PATH
-  Lean.initSearchPath sysroot
-  -- 4. Now you can elaborate files
-  let input ← IO.FS.readFile (args.headD "Main.lean")
-  let (env, success) ← Lean.Elab.runFrontend input {} "Main.lean" `Main
+  -- Initialize Lean's search path to find standard library modules like 'Init'
+  try
+    Lean.initSearchPath (← Lean.findSysroot)
+  catch ex =>
+    IO.eprintln s!"Failed to initialize search path: {ex}"
+    -- Decide if you want to exit here or try to continue
+    -- For 'Init' not found, it's likely fatal, so rethrow or exit
+    throw ex
+
+  let file := args.headD "Main.lean" -- Consider if this default is appropriate for your tool's usage
+  IO.println s!"Processing file: {file}" -- Added for debugging
+
+  let input ← IO.FS.readFile file
+  let opts := {} -- These are elaboration options, not search path configurations
+
+  -- Elaborate the file and get its environment in IO
+  -- The 'Main' here is a placeholder for the module name being compiled by runFrontend
+  let (env, success) ← Lean.Elab.runFrontend input opts file `Main
   unless success do
     IO.eprintln "Elaboration failed"
-    return
+    IO.Process.exit 1 -- Exit with an error code
 
-  -- Now `env : Environment` is available in IO
+  -- Now env : Environment is available in IO
   let declInfos := env.constants.toList.toArray.map fun (_, ci) => getDeclInfo ci
   let declsJson := Json.arr (declInfos.map ToJson.toJson)
 
