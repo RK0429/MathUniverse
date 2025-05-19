@@ -3,7 +3,7 @@ import Lean.Data.Json
 import LeanStmtExport.ExampleCapture
 import LeanStmtExport.ExportDeps
 import Lean.Elab.Command
-import Lean.Util.Path
+import Lean.Util.Path -- Make sure this is imported for findSysroot, initSearchPath, moduleNameOfFileName
 
 open Lean
 open ExportDeps
@@ -53,6 +53,12 @@ def getLeanPathForProject (projectDir : FilePath) : IO (List FilePath) := do
     throw <| IO.userError s!"'lake print-paths' failed for project {projectDir}: {proc.stderr}"
   getLeanPathFromLakeOutput proc.stdout
 
+-- Helper function to get a value from Option within IO, or throw a specific error
+def getOrFail (optVal : Option α) (errorMsg : String) : IO α :=
+  match optVal with
+  | some val => pure val
+  | none => throw <| IO.userError errorMsg
+
 def main (args : List String) : IO Unit := do
   if args.length < 2 then
     IO.eprintln "Usage: lean_stmt_export <path_to_target_project_root> <path_to_lean_file_to_process>"
@@ -64,29 +70,26 @@ def main (args : List String) : IO Unit := do
   IO.println s!"Target project directory: {targetProjectDir}"
   IO.println s!"Processing file: {fileToProcess}"
 
-  let targetProjectLeanPath : List FilePath ← getLeanPathForProject targetProjectDir -- Renamed for clarity
+  let targetProjectLeanPath : List FilePath ← getLeanPathForProject targetProjectDir
 
   try
-    -- Initialize Lean's search path with the paths from the target project.
-    -- This will include the target project's build artifacts and its dependencies.
-    let sysroot ← Lean.findSysroot -- Get the system root for the current Lean installation
+    let sysroot ← Lean.findSysroot
     IO.println s!"Using Lean sysroot: {sysroot}"
     IO.println s!"Using search paths from target project: {targetProjectLeanPath.map toString}"
-    Lean.initSearchPath sysroot targetProjectLeanPath -- Pass the List FilePath directly
-
+    Lean.initSearchPath sysroot targetProjectLeanPath
   catch ex =>
     IO.eprintln s!"Failed to initialize search path for target project: {ex}"
     throw ex
 
   let input ← IO.FS.readFile fileToProcess
-  let opts := {} -- Consider if you need specific Elab.Options
+  let opts := {}
 
-  -- The module name for runFrontend can often be derived or set to a placeholder.
-  -- For a file like `../universe/Universe/Group.lean`, the module name might be `Universe.Group`.
-  -- Deriving this robustly might require more logic based on `targetProjectDir` and `fileToProcess`.
-  let moduleName : Name ← match ←Lean.moduleNameOfFileName fileToProcess (some targetProjectDir) with
-    | some name => pure name
-    | none => throw <| IO.userError s!"Could not determine module name for file {fileToProcess} relative to root {targetProjectDir}"
+  -- Step 1: Get the Option Name from the IO action
+  let moduleNameOption ← Lean.moduleNameOfFileName fileToProcess (some targetProjectDir)
+
+  -- Step 2: Use the helper to get Name or throw an error
+  let moduleName ← getOrFail moduleNameOption s!"Could not determine module name for file {fileToProcess} relative to root {targetProjectDir}"
+
   IO.println s!"Elaborating with module name: {moduleName}"
 
   let (env, success) ← Lean.Elab.runFrontend input opts fileToProcess.toString moduleName
