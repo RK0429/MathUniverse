@@ -27,7 +27,6 @@
     require lean_stmt_export from git "https://github.com/RK0429/lean_stmt_export" @ "main"
     ```
 
-    (Replace `"https://github.com/RK0429/lean_stmt_export"` with the actual repository URL if it's hosted elsewhere.)
 3. **Build your project:**
     Run `lake build` in your project's root directory.
 
