@@ -8,6 +8,7 @@ import Lean
 import Lean.Data.Json
 import LeanStmtExport.ExampleCapture
 import LeanStmtExport.ExportDeps
+import Lean.Elab.Command
 
 open Lean
 open ExportDeps
@@ -34,5 +35,4 @@ def main : IO Unit := Lean.run do
   -- Combine into final JSON object
   let resultJson := Json.mkObj [("declarations", declsJson), ("examples", examplesJson)]
 
-  -- Print formatted JSON to stdout
   liftIO $ IO.println (resultJson.pretty 2)
