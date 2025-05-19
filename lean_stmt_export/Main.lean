@@ -63,27 +63,29 @@ def main (args : List String) : IO Unit := do
   IO.println s!"Target project directory: {targetProjectDir}"
   IO.println s!"Processing file: {fileToProcess}"
 
-  try
-    -- Get the search paths from the target project
-    let targetProjectLeanPath ← getLeanPathForProject targetProjectDir
+  let targetProjectLeanPath : List FilePath ← getLeanPathForProject targetProjectDir -- Renamed for clarity
 
+  try
     -- Initialize Lean's search path with the paths from the target project.
-    -- This will include the target project's build artifacts and its dependencies (like Mathlib, if used).
-    -- It should also include the Lean stdlib path by default from `lake print-paths`.
-    Lean.initSearchPath (some targetProjectLeanPath)
+    -- This will include the target project's build artifacts and its dependencies.
+    let sysroot ← Lean.findSysroot -- Get the system root for the current Lean installation
+    IO.println s!"Using Lean sysroot: {sysroot}"
+    IO.println s!"Using search paths from target project: {targetProjectLeanPath.map toString}"
+    Lean.initSearchPath sysroot targetProjectLeanPath -- Pass the List FilePath directly
 
   catch ex =>
     IO.eprintln s!"Failed to initialize search path for target project: {ex}"
     throw ex
 
   let input ← IO.FS.readFile fileToProcess
-  let opts := {}
+  let opts := {} -- Consider if you need specific Elab.Options
 
   -- The module name for runFrontend can often be derived or set to a placeholder.
   -- For a file like `../universe/Universe/Group.lean`, the module name might be `Universe.Group`.
   -- Deriving this robustly might require more logic based on `targetProjectDir` and `fileToProcess`.
-  -- For now, using a placeholder or a simple derivation.
-  let moduleName ← IO.RealWorld.moduleNameOfFileName fileToProcess (some targetProjectDir)
+  let moduleName : Name ← match ←Lean.moduleNameOfFileName fileToProcess (some targetProjectDir) with
+    | some name => pure name
+    | none => throw <| IO.userError s!"Could not determine module name for file {fileToProcess} relative to root {targetProjectDir}"
   IO.println s!"Elaborating with module name: {moduleName}"
 
   let (env, success) ← Lean.Elab.runFrontend input opts fileToProcess.toString moduleName
