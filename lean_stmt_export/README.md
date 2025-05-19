@@ -1,15 +1,23 @@
 # lean_stmt_export
 
-[![Lean Version](https://img.shields.io/badge/lean-4-blue.svg?style=flat-square)](https://leanprover.github.io/) [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat-square)](https://opensource.org/licenses/Apache-2.0)
+[![Build Status](https://github.com/RK0429/lean_stmt_export/actions/workflows/lean_action_ci.yml/badge.svg?branch=main)](https://github.com/RK0429/lean_stmt_export/actions) [![Lean Version](https://img.shields.io/badge/lean-4.19.0-blue.svg?style=flat-square)](https://leanprover.github.io/) [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat-square)](https://opensource.org/licenses/Apache-2.0)
 
 ## Overview
 
 `lean_stmt_export` is a utility for Lean 4 projects that extracts information about all declarations (definitions, theorems, axioms, inductive types, etc.) and their dependencies from a given Lean file. It also captures dependencies of custom `example` commands. The output is a structured JSON, suitable for further analysis, documentation generation, or visualization of the project's structure. This tool helps in understanding the relationships between different parts of a Lean codebase.
 
+## Features
+
+- Extracts definitions, theorems, axioms, inductive types, and other declarations along with their dependencies.
+- Captures dependencies for custom `example` commands in Lean code.
+- Outputs structured JSON for both declarations and examples.
+- Usable via CLI (`lake exe lean_stmt_export`) and within Lean code (`export_deps` command`).
+
 ## Table of Contents
 
 - [lean\_stmt\_export](#lean_stmt_export)
   - [Overview](#overview)
+  - [Features](#features)
   - [Table of Contents](#table-of-contents)
   - [Installation](#installation)
   - [Usage](#usage)
@@ -19,16 +27,32 @@
 
 ## Installation
 
-1. **Ensure Lean 4 is installed:** Follow the instructions on the [official Lean website](https://leanprover.github.io/lean4/doc/setup.html).
-2. **Add `lean_stmt_export` as a dependency:**
-    In your `lakefile.lean`, add:
+To use `lean_stmt_export`, ensure you have Lean 4 (v4.19.0) and Lake installed:
 
-    ```lean
-    require lean_stmt_export from git "https://github.com/RK0429/lean_stmt_export" @ "main"
-    ```
+1. **Install Lean 4**: Follow the instructions at [https://leanprover.github.io/lean4/doc/setup.html](https://leanprover.github.io/lean4/doc/setup.html).
+2. **Install Lake** (if not already installed):
 
-3. **Build your project:**
-    Run `lake build` in your project's root directory.
+   ```sh
+   elan toolchain install leanprover/lean4:v4.19.0
+   ```
+
+3. **Add as a dependency**: In your `lakefile.lean`, add:
+
+   ```lean
+   require lean_stmt_export from git "https://github.com/RK0429/lean_stmt_export" @ "main"
+   ```
+
+4. **Build your project**:
+
+   ```sh
+   lake build
+   ```
+
+5. **(Optional)** Install the executable locally:
+
+   ```sh
+   lake exe install lean_stmt_export
+   ```
 
 ## Usage
 
@@ -78,18 +102,18 @@ The output is a single JSON object with two main keys: `declarations` and `examp
 {
   "declarations": [
     {
-      "name": "MyProject.myDefinition",
-      "kind": "def", // or "theorem", "axiom", "inductive", "opaque", "other"
-      "deps": ["Dependency1.name", "Dependency2.name"]
+      "name": "MyProject.myDef",
+      "kind": "def",
+      "deps": ["Math.Add.add", "MyProject.otherDef"]
     }
-    // ... more declarations
+    // ...
   ],
   "examples": [
     {
-      "name": "example_123", // auto-generated unique name
-      "deps": ["ExampleDependency1.name", "ExampleDependency2.name"]
+      "name": "example_1",
+      "deps": ["Nat.add_comm"]
     }
-    // ... more captured examples
+    // ...
   ]
 }
 ```
@@ -104,13 +128,10 @@ The output is a single JSON object with two main keys: `declarations` and `examp
 
 ## Contributing
 
-Contributions are welcome! Please feel free to open an issue or submit a pull request.
-When contributing, please ensure your code adheres to the existing style and that any new functionality is appropriately covered by tests (if applicable).
-
-(Link to `CONTRIBUTING.md` would go here if it existed in the project)
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on contributing, or open issues and pull requests via GitHub.
 
 ## License
 
-This project is licensed under the Apache License 2.0.
-SPDX-Identifier: Apache-2.0
-See the [LICENSE](LICENSE) file for details (if a LICENSE file exists).
+Apache License 2.0 (SPDX: Apache-2.0)
+
+This project is licensed under the Apache License 2.0, permitting use, modification, and distribution under the terms of the license. See the [LICENSE](LICENSE) file for full details.
